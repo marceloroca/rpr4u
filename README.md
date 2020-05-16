@@ -5,7 +5,7 @@ Radeon ProRender Unity Viewport
 
 # Prerequisites
 * **AMD Radeon™ ProRender SDK** [link](https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderSDK)
-* **OORPR.net [link](https://github.com/marceloroca/rpr.net)
+* OORPR.net [link](https://github.com/marceloroca/rpr.net)
 
 # Instructions
 Install "Editor Coroutines" package in Unity Editor (use Unity Package Manager)

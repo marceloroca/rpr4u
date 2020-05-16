@@ -38,7 +38,7 @@ namespace RPR4U.RPRUnityEditor
         public Dictionary<int, CameraData> Cameras { get; set; } = new Dictionary<int, CameraData>();
         public List<LightData> Lights { get; private set; } = new List<LightData>();
         public Dictionary<int, MaterialData> Materials { get; private set; } = new Dictionary<int, MaterialData>();
-        public Dictionary<int, MeshTransformData> MeshTransforms { get; private set; } = new Dictionary<int, MeshTransformData>();
+        public Dictionary<int, MeshInstancesData> Meshes { get; private set; } = new Dictionary<int, MeshInstancesData>();
 
         public static SceneData GenerateSceneData()
         {
@@ -49,7 +49,7 @@ namespace RPR4U.RPRUnityEditor
         {
             this.Cameras.Clear();
             this.Lights.Clear();
-            this.MeshTransforms.Clear();
+            this.Meshes.Clear();
         }
 
         public void SetDirty()
@@ -118,7 +118,9 @@ namespace RPR4U.RPRUnityEditor
                     Intensity = item.intensity,
                     Range = item.range,
                     InnerSpotAngle = 0,
-                    OuterSpotAngle = item.spotAngle * UnityEngine.Mathf.Deg2Rad
+                    OuterSpotAngle = item.spotAngle * UnityEngine.Mathf.Deg2Rad,
+                    ShadowStrenght = item.shadowStrength,
+                    ShadowType = (ShadowType)item.shadows
                 };
 
                 this.Lights.Add(newLight);
@@ -174,15 +176,15 @@ namespace RPR4U.RPRUnityEditor
                             {
                                 var id = meshFilter.sharedMesh.GetInstanceID();
 
-                                if (this.MeshTransforms.TryGetValue(id, out MeshTransformData meshData))
+                                if (this.Meshes.TryGetValue(id, out MeshInstancesData meshData))
                                 {
-                                    meshData.Add(meshRenderer);
+                                    meshData.Add(meshRenderer, meshFilter);
                                 }
                                 else
                                 {
-                                    meshData = new MeshTransformData(meshRenderer, meshFilter);
+                                    meshData = new MeshInstancesData(meshRenderer, meshFilter);
 
-                                    this.MeshTransforms.Add(id, meshData);
+                                    this.Meshes.Add(id, meshData);
                                 }
                             }
                         }
@@ -191,44 +193,44 @@ namespace RPR4U.RPRUnityEditor
             }
         }
 
-        public class MeshData
+        public class InstanceData
         {
-            public int MaterialId { get; set; }
-            public Mesh Mesh { get; set; }
+            public TransformData Transform { get; set; }
+            public int[] MaterialsId { get; set; }
         }
 
-        public class MeshTransformData
+        public class MeshInstancesData
         {
-            public MeshTransformData()
+            public MeshInstancesData()
             {
-                this.SubMeshes = new List<MeshData>();
-                this.Transforms = new List<TransformData>();
+                this.SubMeshes = new List<Mesh>();
+                this.Instances = new List<InstanceData>();
             }
 
-            public MeshTransformData(UnityEngine.MeshRenderer meshRenderer, UnityEngine.MeshFilter meshFilter)
+            public MeshInstancesData(UnityEngine.MeshRenderer meshRenderer, UnityEngine.MeshFilter meshFilter)
                 : this()
             {
-                if (meshFilter.sharedMesh.subMeshCount > 1)
+                for (var i = 0; i < UnityEngine.Mathf.Min(meshFilter.sharedMesh.subMeshCount, meshRenderer.sharedMaterials.Count()); ++i)
                 {
-                    for (var i = 0; i < UnityEngine.Mathf.Min(meshFilter.sharedMesh.subMeshCount, meshRenderer.sharedMaterials.Count()); ++i)
-                    {
-                        this.SubMeshes.Add(new MeshData { MaterialId = meshRenderer.sharedMaterials[i].GetInstanceID(), Mesh = meshFilter.sharedMesh.GetSubmesh(i).Convert() });
-                    }
-                }
-                else
-                {
-                    this.SubMeshes.Add(new MeshData { MaterialId = meshRenderer.sharedMaterial.GetInstanceID(), Mesh = meshFilter.sharedMesh.Convert() });
+                    this.SubMeshes.Add(meshFilter.sharedMesh.GetSubmesh(i).Convert());
                 }
 
-                this.Transforms.Add(meshRenderer.transform.Convert());
+                this.Add(meshRenderer, meshFilter);
             }
 
-            public List<MeshData> SubMeshes { get; set; }
-            public List<TransformData> Transforms { get; set; }
+            public List<Mesh> SubMeshes { get; set; }
+            public List<InstanceData> Instances { get; set; }
 
-            public void Add(UnityEngine.MeshRenderer meshRenderer)
+            public void Add(UnityEngine.MeshRenderer meshRenderer, UnityEngine.MeshFilter meshFilter)
             {
-                this.Transforms.Add(meshRenderer.transform.Convert());
+                var materialsId = new int[meshFilter.sharedMesh.subMeshCount];
+
+                for (var i = 0; i < UnityEngine.Mathf.Min(meshFilter.sharedMesh.subMeshCount, meshRenderer.sharedMaterials.Count()); ++i)
+                {
+                    materialsId[i] = meshRenderer.sharedMaterials[i].GetInstanceID();
+                }
+
+                this.Instances.Add(new InstanceData { Transform = meshRenderer.transform.Convert(), MaterialsId = materialsId });
             }
         }
     }

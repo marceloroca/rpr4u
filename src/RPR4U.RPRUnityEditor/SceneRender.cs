@@ -53,7 +53,7 @@ namespace RPR4U.RPRUnityEditor
 
         public void Dispose()
         {
-            //this.context?.Dispose();
+            this.context?.Dispose();
 
             UnityEngine.Debug.Log("scenerender Disposed");
         }
@@ -85,7 +85,7 @@ namespace RPR4U.RPRUnityEditor
             return tex;
         }
 
-        public void Initialize(CreationFlags creationFlags, RenderMode renderMode, CameraMode cameraMode, int cameraId, float ipd, int width, int height, int numIterations, int adaptativeMinSamples, int adaptativeTileSize, float adaptativeThreshold)
+        public void Initialize(CreationFlags creationFlags, RenderMode renderMode, CameraMode cameraMode, int cameraId, float ipd, int width, int height, int numIterations, int adaptativeMinSamples, int adaptativeTileSize, float adaptativeThreshold, float direcionalLigthMultiplier)
         {
             if (this.context != null)
             {
@@ -145,45 +145,50 @@ namespace RPR4U.RPRUnityEditor
 
                     if (string.IsNullOrEmpty(itemMaterial.Value.MainTexture))
                     {
-                        rprMaterial = new RPRDiffuseMaterial(this.context, itemMaterial.Value.MainColor);
+                        rprMaterial = new RPRUberMaterial(this.context, UberMaterial.DiffuseSimple(itemMaterial.Value.MainColor));
                     }
                     else
                     {
-                        rprMaterial = new RPRDiffuseMaterial(this.context, itemMaterial.Value.MainTexture);
+                        rprMaterial = new RPRUberMaterial(this.context, UberMaterial.DiffuseSimple(itemMaterial.Value.MainTexture));
                     }
 
                     materialTable.Add(itemMaterial.Key, rprMaterial);
                 }
             }
 
-            foreach (var itemMeshTransofrm in sceneData.MeshTransforms)
+            foreach (var itemMesh in sceneData.Meshes)
             {
-                foreach (var itemMesh in itemMeshTransofrm.Value.SubMeshes)
+                var csm = 0;
+
+                foreach (var itemSubMesh in itemMesh.Value.SubMeshes)
                 {
                     // creamos el mesh
-                    var rprMesh = new RPRMesh(this.context, itemMesh.Mesh);
-
-                    // le metemos el material
-                    rprMesh.SetMaterial(materialTable[itemMesh.MaterialId]);
+                    var rprMesh = new RPRMesh(this.context, itemSubMesh);
 
                     // instanciamos
-                    var cnt = 0; ;
-                    foreach (var itemTransform in itemMeshTransofrm.Value.Transforms)
+                    var cin = 0; ;
+                    foreach (var itemInstance in itemMesh.Value.Instances)
                     {
-                        if (cnt > 0)
+                        if (cin < 1)
                         {
-                            var rprInstance = new RPRMeshInstance(this.context, rprMesh);
-                            rprInstance.SetTRS(itemTransform);
-                            scene.Attach(rprInstance);
+                            rprMesh.SetTRS(itemInstance.Transform);
+                            scene.Attach(rprMesh);
+                            // le metemos el material
+                            rprMesh.SetMaterial(materialTable[itemInstance.MaterialsId[csm]]);
                         }
                         else
                         {
-                            rprMesh.SetTRS(itemTransform);
-                            scene.Attach(rprMesh);
+                            var rprInstance = new RPRMeshInstance(this.context, rprMesh);
+                            rprInstance.SetTRS(itemInstance.Transform);
+                            scene.Attach(rprInstance);
+                            // le metemos el material
+                            rprInstance.SetMaterial(materialTable[itemInstance.MaterialsId[csm]]);
                         }
 
-                        ++cnt;
+                        ++cin;
                     }
+
+                    ++csm;
                 }
             }
 
@@ -211,7 +216,23 @@ namespace RPR4U.RPRUnityEditor
 
                     case LightType.Directional:
                         var rprDirectionalLight = new RPRDirectionalLight(this.context);
-                        rprDirectionalLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * 6);
+                        rprDirectionalLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * direcionalLigthMultiplier);
+
+                        switch (itemLigh.ShadowType)
+                        {
+                            case ShadowType.None:
+                                rprDirectionalLight.SetShadowSoftness(0);
+                                break;
+
+                            case ShadowType.Soft:
+                                rprDirectionalLight.SetShadowSoftness(.5f);
+                                break;
+
+                            case ShadowType.Hard:
+                                rprDirectionalLight.SetShadowSoftness(1f);
+                                break;
+                        }
+
                         rprLight = rprDirectionalLight;
                         break;
 

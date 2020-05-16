@@ -24,6 +24,7 @@ namespace RPR4U.RPRUnityEditor
         private int selectedCamera;
         private Camera unityCamera;
         private EditorCoroutine updateCoroutine;
+        private float direcionalLigthMultiplier = 6;
 
         private SceneRender SceneRender
         {
@@ -46,6 +47,8 @@ namespace RPR4U.RPRUnityEditor
 
         protected void OnDestroy()
         {
+            EditorCoroutineUtility.StopCoroutine(this.updateCoroutine);
+
             if (this.sceneRender == null)
             {
                 return;
@@ -64,6 +67,19 @@ namespace RPR4U.RPRUnityEditor
             GUILayout.FlexibleSpace();
             this.DrawMenu_Lower();
             EditorGUILayout.EndVertical();
+        }
+
+        private void DrawMenu_LightMultiplier()
+        {
+            if (EditorGUILayout.DropdownButton(new GUIContent("Light Multiplier"), FocusType.Passive))
+            {
+                PopupWindow.Show(adaptativeSamplingButtonRect, new LightPopUpMenu(this));
+            }
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                this.adaptativeSamplingButtonRect = GUILayoutUtility.GetLastRect();
+            }
         }
 
         private void DrawMenu_AdaptativeSampling()
@@ -241,6 +257,7 @@ namespace RPR4U.RPRUnityEditor
             this.numIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.numIterations), 0, 99999);
 
             this.DrawMenu_AdaptativeSampling();
+            this.DrawMenu_LightMultiplier();
 
             GUILayout.FlexibleSpace();
 
@@ -296,16 +313,41 @@ namespace RPR4U.RPRUnityEditor
                       this.numIterations,
                       this.adaptativeMinSamples,
                       this.adaptativeTileSize,
-                      this.adaptativeThreshold);
+                      this.adaptativeThreshold,
+                      this.direcionalLigthMultiplier);
         }
 
         private IEnumerator UpdateTexture()
         {
             while (true)
             {
-                this.renderTexture = this.SceneRender.GetTexture();
-                this.Repaint();
+                if (this.sceneRender != null)
+                {
+                    this.renderTexture = this.SceneRender?.GetTexture();
+                    this.Repaint();
+                }
+
                 yield return new EditorWaitForSeconds(.1f);
+            }
+        }
+
+        private class LightPopUpMenu : PopupWindowContent
+        {
+            private readonly RenderEditorWindow editor;
+
+            public LightPopUpMenu(RenderEditorWindow editor)
+            {
+                this.editor = editor;
+            }
+
+            public override Vector2 GetWindowSize()
+            {
+                return new Vector2(200, 100);
+            }
+
+            public override void OnGUI(Rect rect)
+            {
+                this.editor.direcionalLigthMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.editor.direcionalLigthMultiplier), 0, 10);
             }
         }
 
