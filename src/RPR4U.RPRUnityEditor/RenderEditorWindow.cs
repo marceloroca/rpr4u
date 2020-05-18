@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using RPR4U.RPRUnityEditor.Data;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using Unity.EditorCoroutines.Editor;
@@ -9,22 +10,12 @@ namespace RPR4U.RPRUnityEditor
 {
     public class RenderEditorWindow : EditorWindow
     {
-        private int adaptativeMinSamples = 100;
         private Rect adaptativeSamplingButtonRect;
-        private float adaptativeThreshold = 0.05f;
-        private int adaptativeTileSize = 16;
-        private float cameraIPD = 6.4f;
-        private RadeonProRender.CameraMode cameraMode = RadeonProRender.CameraMode.Perspective;
-        private int imageHeight = 512;
-        private int imageWidth = 1024;
-        private int numIterations = 5000;
-        private RadeonProRender.RenderMode renderMode = RadeonProRender.RenderMode.GlobalIllumination;
+        private Rect lightMultipliergButtonRect;
         private Texture2D renderTexture;
         private SceneRender sceneRender;
-        private int selectedCamera;
-        private Camera unityCamera;
+        private SceneSettings sceneSettings;
         private EditorCoroutine updateCoroutine;
-        private float direcionalLigthMultiplier = 6;
 
         private SceneRender SceneRender
         {
@@ -42,12 +33,45 @@ namespace RPR4U.RPRUnityEditor
         [MenuItem("Extensions/RPR4U/Render viewport")]
         public static void ShowWindow()
         {
-            GetWindow(typeof(RenderEditorWindow), false, "Render View");
+            var w = (RenderEditorWindow)GetWindow(typeof(RenderEditorWindow), false, "Render View");
+
+            w.sceneSettings = new SceneSettings
+            {
+                RenderSettings = new Data.RenderSettings
+                {
+                    Mode = RadeonProRender.RenderMode.GlobalIllumination,
+                    ImageWidth = 1024,
+                    ImageHeight = 512,
+                    NumIterations = 100,
+                },
+                CameraSettings = new CameraSettings
+                {
+                    Mode = RadeonProRender.CameraMode.Perspective,
+                    IPD = .65f,
+                    SelectedCamera = 0,
+                },
+                AdaptativeSettings = new AdaptativeSettings
+                {
+                    Enabled = false,
+                    MinSamples = 100,
+                    Threshold = .05f,
+                    TileSize = 16,
+                },
+                LightSettings = new LightSettings
+                {
+                    DirectionalLightMultiplier = 6,
+                    PointLightMultiplier = 2,
+                    SpotLightMultiplier = 2,
+                },
+            };
         }
 
         protected void OnDestroy()
         {
-            EditorCoroutineUtility.StopCoroutine(this.updateCoroutine);
+            if (this.updateCoroutine != null)
+            {
+                EditorCoroutineUtility.StopCoroutine(this.updateCoroutine);
+            }
 
             if (this.sceneRender == null)
             {
@@ -69,11 +93,11 @@ namespace RPR4U.RPRUnityEditor
             EditorGUILayout.EndVertical();
         }
 
-        private void DrawMenu_LightMultiplier()
+        private void DrawMenu_AdaptativeSampling()
         {
-            if (EditorGUILayout.DropdownButton(new GUIContent("Light Multiplier"), FocusType.Passive))
+            if (EditorGUILayout.DropdownButton(new GUIContent("Adaptative Sampling"), FocusType.Passive))
             {
-                PopupWindow.Show(adaptativeSamplingButtonRect, new LightPopUpMenu(this));
+                PopupWindow.Show(this.adaptativeSamplingButtonRect, new AdaptativePopUpMenu(this.sceneSettings));
             }
 
             if (Event.current.type == EventType.Repaint)
@@ -82,16 +106,16 @@ namespace RPR4U.RPRUnityEditor
             }
         }
 
-        private void DrawMenu_AdaptativeSampling()
+        private void DrawMenu_LightMultiplier()
         {
-            if (EditorGUILayout.DropdownButton(new GUIContent("Adaptative Sampling"), FocusType.Passive))
+            if (EditorGUILayout.DropdownButton(new GUIContent("Light Multiplier"), FocusType.Passive))
             {
-                PopupWindow.Show(adaptativeSamplingButtonRect, new AdaptativePopUpMenu(this));
+                PopupWindow.Show(this.lightMultipliergButtonRect, new LightPopUpMenu(this.sceneSettings));
             }
 
             if (Event.current.type == EventType.Repaint)
             {
-                this.adaptativeSamplingButtonRect = GUILayoutUtility.GetLastRect();
+                this.lightMultipliergButtonRect = GUILayoutUtility.GetLastRect();
             }
         }
 
@@ -112,7 +136,9 @@ namespace RPR4U.RPRUnityEditor
 
             GUILayout.FlexibleSpace();
 
-            GUILayout.Label($"Versión: 1.0.001(B)");
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+
+            GUILayout.Label($"Versión: {version}");
             EditorGUILayout.EndHorizontal();
         }
 
@@ -159,12 +185,10 @@ namespace RPR4U.RPRUnityEditor
                         {
                             if (this.SceneRender.IterationCount > 0)
                             {
-                                //this.SceneRender.SaveRender(path);
-
                                 var pix = this.renderTexture.GetPixels();
                                 System.Array.Reverse(pix, 0, pix.Length);
 
-                                var rotatedTexture = new Texture2D(this.renderTexture.width, this.renderTexture.height);
+                                var rotatedTexture = new Texture2D(this.renderTexture.width, this.renderTexture.height, TextureFormat.RGBA32, false, true);
                                 rotatedTexture.SetPixels(pix);
 
                                 File.WriteAllBytes(path, rotatedTexture.EncodeToPNG());
@@ -207,54 +231,53 @@ namespace RPR4U.RPRUnityEditor
 
             EditorGUIUtility.labelWidth = 40;
             EditorGUIUtility.fieldWidth = 120;
-            this.renderMode = (RadeonProRender.RenderMode)EditorGUILayout.EnumPopup("Mode:", this.renderMode);
+            this.sceneSettings.RenderSettings.Mode = (RadeonProRender.RenderMode)EditorGUILayout.EnumPopup("Mode:", this.sceneSettings.RenderSettings.Mode);
 
             EditorGUIUtility.labelWidth = 50;
             EditorGUIUtility.fieldWidth = 150;
-            this.cameraMode = (RadeonProRender.CameraMode)EditorGUILayout.EnumPopup("Camera:", this.cameraMode);
+            this.sceneSettings.CameraSettings.Mode = (RadeonProRender.CameraMode)EditorGUILayout.EnumPopup("Camera:", this.sceneSettings.CameraSettings.Mode);
 
-            if (this.cameraMode == RadeonProRender.CameraMode.LatitudLongitudeStereo ||
-                this.cameraMode == RadeonProRender.CameraMode.CubemapStereo)
+            if (this.sceneSettings.CameraSettings.Mode == RadeonProRender.CameraMode.LatitudLongitudeStereo ||
+                this.sceneSettings.CameraSettings.Mode == RadeonProRender.CameraMode.CubemapStereo)
             {
                 EditorGUIUtility.labelWidth = 25;
                 EditorGUIUtility.fieldWidth = 40;
 
-                this.cameraIPD = Mathf.Clamp(EditorGUILayout.FloatField("Ipd:", this.cameraIPD), 0, 100);
+                this.sceneSettings.CameraSettings.IPD = Mathf.Clamp(EditorGUILayout.FloatField("Ipd:", this.sceneSettings.CameraSettings.IPD), 0, 100);
             }
 
             EditorGUIUtility.labelWidth = 95;
             EditorGUIUtility.fieldWidth = 120;
 
-            this.selectedCamera = EditorGUILayout.Popup("Render Camera:", this.selectedCamera, (from t in unityCameras select t.name).ToArray());
-            this.unityCamera = unityCameras[this.selectedCamera];
+            this.sceneSettings.CameraSettings.SelectedCamera = EditorGUILayout.Popup("Render Camera:", this.sceneSettings.CameraSettings.SelectedCamera, (from t in unityCameras select t.name).ToArray());
 
             EditorGUIUtility.labelWidth = 15;
             EditorGUIUtility.fieldWidth = 45;
-            this.imageWidth = Mathf.Clamp(EditorGUILayout.IntField("W:", this.imageWidth), 0, 8192);
+            this.sceneSettings.RenderSettings.ImageWidth = Mathf.Clamp(EditorGUILayout.IntField("W:", this.sceneSettings.RenderSettings.ImageWidth), 0, 8192);
 
-            switch (this.cameraMode)
+            switch (this.sceneSettings.CameraSettings.Mode)
             {
                 case RadeonProRender.CameraMode.CubeMap:
                 case RadeonProRender.CameraMode.LatitudLongitude360:
-                    this.imageHeight = this.imageWidth / 2;
+                    this.sceneSettings.RenderSettings.ImageHeight = this.sceneSettings.RenderSettings.ImageWidth / 2;
                     break;
 
                 case RadeonProRender.CameraMode.CubemapStereo:
                 case RadeonProRender.CameraMode.FishEye:
                 case RadeonProRender.CameraMode.LatitudLongitudeStereo:
-                    this.imageHeight = this.imageWidth;
+                    this.sceneSettings.RenderSettings.ImageHeight = this.sceneSettings.RenderSettings.ImageWidth;
                     break;
 
                 default:
                     EditorGUIUtility.labelWidth = 15;
                     EditorGUIUtility.fieldWidth = 45;
-                    this.imageHeight = Mathf.Clamp(EditorGUILayout.IntField("H:", this.imageHeight), 0, 8192);
+                    this.sceneSettings.RenderSettings.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("H:", this.sceneSettings.RenderSettings.ImageHeight), 0, 8192);
                     break;
             }
 
             EditorGUIUtility.labelWidth = 75;
             EditorGUIUtility.fieldWidth = 45;
-            this.numIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.numIterations), 0, 99999);
+            this.sceneSettings.RenderSettings.NumIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.sceneSettings.RenderSettings.NumIterations), 0, 99999);
 
             this.DrawMenu_AdaptativeSampling();
             this.DrawMenu_LightMultiplier();
@@ -304,17 +327,7 @@ namespace RPR4U.RPRUnityEditor
         {
             this.SceneRender.Initialize(
                       RadeonProRender.CreationFlags.Gpu00 | RadeonProRender.CreationFlags.Gpu01,
-                      this.renderMode,
-                      this.cameraMode,
-                      this.unityCamera.GetInstanceID(),
-                      this.cameraIPD,
-                      this.imageWidth,
-                      this.imageHeight,
-                      this.numIterations,
-                      this.adaptativeMinSamples,
-                      this.adaptativeTileSize,
-                      this.adaptativeThreshold,
-                      this.direcionalLigthMultiplier);
+                      this.sceneSettings);
         }
 
         private IEnumerator UpdateTexture()
@@ -328,48 +341,6 @@ namespace RPR4U.RPRUnityEditor
                 }
 
                 yield return new EditorWaitForSeconds(.1f);
-            }
-        }
-
-        private class LightPopUpMenu : PopupWindowContent
-        {
-            private readonly RenderEditorWindow editor;
-
-            public LightPopUpMenu(RenderEditorWindow editor)
-            {
-                this.editor = editor;
-            }
-
-            public override Vector2 GetWindowSize()
-            {
-                return new Vector2(200, 100);
-            }
-
-            public override void OnGUI(Rect rect)
-            {
-                this.editor.direcionalLigthMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.editor.direcionalLigthMultiplier), 0, 10);
-            }
-        }
-
-        private class AdaptativePopUpMenu : PopupWindowContent
-        {
-            private readonly RenderEditorWindow editor;
-
-            public AdaptativePopUpMenu(RenderEditorWindow editor)
-            {
-                this.editor = editor;
-            }
-
-            public override Vector2 GetWindowSize()
-            {
-                return new Vector2(200, 100);
-            }
-
-            public override void OnGUI(Rect rect)
-            {
-                this.editor.adaptativeMinSamples = Mathf.Clamp(EditorGUILayout.IntField("Minimum samples:", this.editor.adaptativeMinSamples), 10, 99999);
-                this.editor.adaptativeTileSize = Mathf.Clamp(EditorGUILayout.IntField("Tile Size:", this.editor.adaptativeTileSize), 4, 32);
-                this.editor.adaptativeThreshold = Mathf.Clamp(EditorGUILayout.FloatField("Tolerance:", this.editor.adaptativeThreshold), 0f, 1f);
             }
         }
 
@@ -387,6 +358,55 @@ namespace RPR4U.RPRUnityEditor
                 EditorGUILayout.LabelField("This is an example of EditorWindow.ShowPopup", EditorStyles.wordWrappedLabel);
                 GUILayout.Space(70);
                 if (GUILayout.Button("Agree!")) this.Close();
+            }
+        }
+
+        private class AdaptativePopUpMenu : PopupWindowContent
+        {
+            private readonly SceneSettings sceneSettings;
+
+            public AdaptativePopUpMenu(SceneSettings sceneSettings)
+            {
+                this.sceneSettings = sceneSettings;
+            }
+
+            public override Vector2 GetWindowSize()
+            {
+                return new Vector2(200, 100);
+            }
+
+            public override void OnGUI(Rect rect)
+            {
+                this.sceneSettings.AdaptativeSettings.Enabled = EditorGUILayout.Toggle("Enabled:", this.sceneSettings.AdaptativeSettings.Enabled);
+
+                if (this.sceneSettings.AdaptativeSettings.Enabled)
+                {
+                    this.sceneSettings.AdaptativeSettings.MinSamples = Mathf.Clamp(EditorGUILayout.IntField("Minimum samples:", this.sceneSettings.AdaptativeSettings.MinSamples), 10, 99999);
+                    this.sceneSettings.AdaptativeSettings.TileSize = Mathf.Clamp(EditorGUILayout.IntField("Tile Size:", this.sceneSettings.AdaptativeSettings.TileSize), 4, 32);
+                    this.sceneSettings.AdaptativeSettings.Threshold = Mathf.Clamp(EditorGUILayout.FloatField("Tolerance:", this.sceneSettings.AdaptativeSettings.Threshold), 0f, 1f);
+                }
+            }
+        }
+
+        private class LightPopUpMenu : PopupWindowContent
+        {
+            private readonly SceneSettings sceneSettings;
+
+            public LightPopUpMenu(SceneSettings sceneSettings)
+            {
+                this.sceneSettings = sceneSettings;
+            }
+
+            public override Vector2 GetWindowSize()
+            {
+                return new Vector2(200, 100);
+            }
+
+            public override void OnGUI(Rect rect)
+            {
+                this.sceneSettings.LightSettings.DirectionalLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.sceneSettings.LightSettings.DirectionalLightMultiplier), 0, 10);
+                this.sceneSettings.LightSettings.PointLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Point Light:", this.sceneSettings.LightSettings.PointLightMultiplier), 0, 10);
+                this.sceneSettings.LightSettings.SpotLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Spot Light:", this.sceneSettings.LightSettings.SpotLightMultiplier), 0, 10);
             }
         }
     }

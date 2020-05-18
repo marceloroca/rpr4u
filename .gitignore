@@ -2,4 +2,10 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
+PR4U.UnityTest/cache
+/src/RPR4U.UnityTest/Assets/SharedAssets
+/src/RPR4U.UnityTest/Assets/SharedAssets.meta
+sdk/
+libs/
 /src/RPR4U.UnityTest/cache
+/src/.vs

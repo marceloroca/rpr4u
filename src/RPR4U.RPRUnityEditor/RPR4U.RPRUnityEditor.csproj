@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <FileVersion>1.0.1.2</FileVersion>
+    <AssemblyVersion>2020.5.1.6</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -17,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\rpr.net\src\RadeonProRender.OORPR\RadeonProRender.OORPR.csproj" />
+    <ProjectReference Include="..\RPR4U.RPRUnityEditor.Data\RPR4U.RPRUnityEditor.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

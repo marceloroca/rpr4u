@@ -108,5 +108,17 @@ namespace RPR4U.RPRUnityEditor
                 _ => throw new NotImplementedException($"{type} not implemented"),
             };
         }
+
+        public static UnityEngine.Texture2D ChangeFormat(this UnityEngine.Texture2D oldTexture, UnityEngine.TextureFormat newFormat)
+        {
+            //Create new empty Texture
+            UnityEngine.Texture2D newTex = new UnityEngine.Texture2D(2, 2, newFormat, false);
+            //Copy old texture pixels into new one
+            newTex.SetPixels(oldTexture.GetPixels());
+            //Apply
+            newTex.Apply();
+
+            return newTex;
+        }
     }
 }

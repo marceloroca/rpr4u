@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyVersion>2020.5.0.6</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -15,7 +16,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /r /y  $(OutDir)RPR4U.RPRUnityEditor.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\&#xD;&#xA;xcopy /r /y $(OutDir)RadeonProRender.OORPR.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\&#xD;&#xA;xcopy /r /y $(OutDir)RadeonProRender.Wrapper.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\" />
+    <Exec Command="xcopy /r /y  $(OutDir)RPR4U.RPRUnityEditor.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\&#xD;&#xA;xcopy /r /y $(OutDir)RPR4U.RPRUnityEditor.Data.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\&#xD;&#xA;xcopy /r /y $(OutDir)RadeonProRender.OORPR.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\&#xD;&#xA;xcopy /r /y $(OutDir)RadeonProRender.Wrapper.* $(ProjectDir)..\RPR4U.UnityTest\Assets\Extensions\RPR4U\Plugins\&#xD;&#xA;&#xD;&#xA;" />
   </Target>
 
 </Project>

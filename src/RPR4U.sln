@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "RPR4U.Un
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnityTest", "UnityTest", "{FADE49AF-2E75-4DEE-8E29-357ED121F3CF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPR4U.RPRUnityEditor.Data", "RPR4U.RPRUnityEditor.Data\RPR4U.RPRUnityEditor.Data.csproj", "{969F1EB0-E825-487A-B14A-4223F9487621}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,6 +51,10 @@ Global
 		{A0BE1128-F35E-F696-6C81-AB3A767B12B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0BE1128-F35E-F696-6C81-AB3A767B12B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0BE1128-F35E-F696-6C81-AB3A767B12B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{969F1EB0-E825-487A-B14A-4223F9487621}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{969F1EB0-E825-487A-B14A-4223F9487621}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{969F1EB0-E825-487A-B14A-4223F9487621}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{969F1EB0-E825-487A-B14A-4223F9487621}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

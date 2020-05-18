@@ -106,21 +106,18 @@ namespace RPR4U.RPRUnityEditor
         {
             foreach (var item in this.FindAllObjectsOfType<UnityEngine.Light>(rootObjects, false))
             {
-                // var rot = item.transform.rotation * UnityEngine.Quaternion.Euler(0, 180, 180);
                 var rot = item.transform.rotation * UnityEngine.Quaternion.Euler(0, 180, 0);
 
                 var newLight = new LightData
                 {
                     Type = item.type.Convert(),
                     Transform = new TransformData(item.transform.position.Convert(), rot.Convert(), item.transform.lossyScale.Convert()),
-                    // Transform = item.transform.Convert(),
                     Color = item.color.Convert(),
                     Intensity = item.intensity,
                     Range = item.range,
                     InnerSpotAngle = 0,
                     OuterSpotAngle = item.spotAngle * UnityEngine.Mathf.Deg2Rad,
                     ShadowStrenght = item.shadowStrength,
-                    ShadowType = (ShadowType)item.shadows
                 };
 
                 this.Lights.Add(newLight);
@@ -145,16 +142,50 @@ namespace RPR4U.RPRUnityEditor
 
                                 if (!this.Materials.ContainsKey(id))
                                 {
-                                    var mainTex = material.GetTexture("_MainTex");
+                                    switch (material.shader.name.Trim().ToLower())
+                                    {
+                                        case "standard":
+                                            var textureFileName = "";
 
-                                    if (mainTex != null)
-                                    {
-                                        var textureFileName = Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID()));
-                                        this.Materials.Add(id, new MaterialData { MainTexture = textureFileName });
-                                    }
-                                    else
-                                    {
-                                        this.Materials.Add(id, new MaterialData { MainColor = material.color.Convert() });
+                                            var transparent = material.GetTag("RenderType", false).Trim().ToLower() == "transparent";
+
+                                            var mainTex = material.GetTexture("_MainTex");
+                                            var mainColor = material.color.Convert();
+
+                                            if (mainTex != null)
+                                            {
+                                                textureFileName = Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID()));
+                                            }
+
+                                            if (transparent)
+                                            {
+                                                if (mainTex != null)
+                                                {
+                                                    this.Materials.Add(id, new MaterialData { MainTexture = textureFileName, MainColor = mainColor, Transparent = true }); ;
+                                                }
+                                                else
+                                                {
+                                                    this.Materials.Add(id, new MaterialData { MainColor = mainColor, Transparent = true });
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (mainTex != null)
+                                                {
+                                                    this.Materials.Add(id, new MaterialData { MainTexture = textureFileName });
+                                                }
+                                                else
+                                                {
+                                                    this.Materials.Add(id, new MaterialData { MainColor = mainColor });
+                                                }
+                                            }
+
+                                            break;
+
+                                        default:
+                                            UnityEngine.Debug.LogError("Shader Not implemented");
+                                            UnityEngine.Debug.Log($"material.name={material.name} material.shader.name={material.shader.name} renderType = {material.GetTag("RenderType", false)}");
+                                            break;
                                     }
                                 }
                             }

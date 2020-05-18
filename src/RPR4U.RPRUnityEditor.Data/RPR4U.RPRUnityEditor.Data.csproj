@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>RPR4U.RPRUnityEditor</RootNamespace>
+    <AssemblyVersion>2020.5.0.13</AssemblyVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\rpr.net\src\RadeonProRender.OORPR\RadeonProRender.OORPR.csproj" />
+    <ProjectReference Include="..\..\..\rpr.net\src\RadeonProRender.Wrapper\RadeonProRender.Wrapper.csproj" />
+  </ItemGroup>
+
+</Project>
