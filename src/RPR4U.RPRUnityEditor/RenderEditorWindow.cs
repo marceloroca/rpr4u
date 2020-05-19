@@ -1,4 +1,5 @@
-﻿using RPR4U.RPRUnityEditor.Data;
+﻿using Newtonsoft.Json;
+using RPR4U.RPRUnityEditor.Data;
 using System.Collections;
 using System.IO;
 using System.Linq;
@@ -8,14 +9,14 @@ using UnityEngine;
 
 namespace RPR4U.RPRUnityEditor
 {
-    public class RenderEditorWindow : EditorWindow
+    public class RenderparentWindow : EditorWindow
     {
-        private Rect adaptativeSamplingButtonRect;
         private Rect lightMultipliergButtonRect;
         private Texture2D renderTexture;
         private SceneRender sceneRender;
-        private SceneSettings sceneSettings;
+        private SceneSettings settings;
         private EditorCoroutine updateCoroutine;
+        private int zoomLevel;
 
         private SceneRender SceneRender
         {
@@ -30,44 +31,68 @@ namespace RPR4U.RPRUnityEditor
             }
         }
 
+        private SceneSettings Settings
+        {
+            get
+            {
+                if (this.settings == null)
+                {
+                    var json = EditorPrefs.GetString("rpr4u.viewport.settings", string.Empty);
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        this.settings = new SceneSettings
+                        {
+                            Render = new SceneSettings.RenderSettings
+                            {
+                                Mode = RadeonProRender.RenderMode.GlobalIllumination,
+                                ImageWidth = 1024,
+                                ImageHeight = 512,
+                                NumIterations = 100,
+                            },
+                            Camera = new SceneSettings.CameraSettings
+                            {
+                                Mode = RadeonProRender.CameraMode.Perspective,
+                                IPD = .65f,
+                                SelectedCamera = 0,
+                            },
+                            Adaptative = new SceneSettings.AdaptativeSettings
+                            {
+                                Enabled = false,
+                                MinSamples = 100,
+                                Threshold = .05f,
+                                TileSize = 16,
+                            },
+                            Light = new SceneSettings.LightSettings
+                            {
+                                DirectionalLightMultiplier = 6,
+                                PointLightMultiplier = 2,
+                                SpotLightMultiplier = 2,
+                            },
+                        };
+
+                        this.SaveSettings();
+                    }
+                    else
+                    {
+                        this.settings = JsonConvert.DeserializeObject<SceneSettings>(json);
+                    }
+                }
+
+                return this.settings;
+            }
+        }
+
         [MenuItem("Extensions/RPR4U/Render viewport")]
         public static void ShowWindow()
         {
-            var w = (RenderEditorWindow)GetWindow(typeof(RenderEditorWindow), false, "Render View");
-
-            w.sceneSettings = new SceneSettings
-            {
-                Render = new SceneSettings.RenderSettings
-                {
-                    Mode = RadeonProRender.RenderMode.GlobalIllumination,
-                    ImageWidth = 1024,
-                    ImageHeight = 512,
-                    NumIterations = 100,
-                },
-                Camera = new SceneSettings.CameraSettings
-                {
-                    Mode = RadeonProRender.CameraMode.Perspective,
-                    IPD = .65f,
-                    SelectedCamera = 0,
-                },
-                Adaptative = new SceneSettings.AdaptativeSettings
-                {
-                    Enabled = false,
-                    MinSamples = 100,
-                    Threshold = .05f,
-                    TileSize = 16,
-                },
-                Light = new SceneSettings.LightSettings
-                {
-                    DirectionalLightMultiplier = 6,
-                    PointLightMultiplier = 2,
-                    SpotLightMultiplier = 2,
-                },
-            };
+            GetWindow(typeof(RenderparentWindow), false, "Render View");
         }
 
         protected void OnDestroy()
         {
+            this.SaveSettings();
+
             if (this.updateCoroutine != null)
             {
                 EditorCoroutineUtility.StopCoroutine(this.updateCoroutine);
@@ -93,81 +118,10 @@ namespace RPR4U.RPRUnityEditor
             EditorGUILayout.EndVertical();
         }
 
-        private void DrawMenu_AdaptativeSampling()
-        {
-            if (EditorGUILayout.DropdownButton(new GUIContent("Adaptative Sampling"), FocusType.Passive))
-            {
-                PopupWindow.Show(this.adaptativeSamplingButtonRect, new AdaptativePopUpMenu(this.sceneSettings));
-            }
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                this.adaptativeSamplingButtonRect = GUILayoutUtility.GetLastRect();
-            }
-        }
-
-        private void DrawMenu_LightMultiplier()
-        {
-            if (EditorGUILayout.DropdownButton(new GUIContent("Light Multiplier"), FocusType.Passive))
-            {
-                PopupWindow.Show(this.lightMultipliergButtonRect, new LightPopUpMenu(this.sceneSettings));
-            }
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                this.lightMultipliergButtonRect = GUILayoutUtility.GetLastRect();
-            }
-        }
-
-        private void DrawMenu_Lower()
-        {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            if (this.SceneRender.IsRendering)
-            {
-                GUILayout.Label($"Rendering ");
-            }
-
-            if (this.SceneRender.IterationCount > 0)
-            {
-                GUILayout.Label($"Iterations: {this.SceneRender.IterationCount}");
-                GUILayout.Label($"Time: {this.SceneRender.RenderingTime:hh\\:mm\\.ss}");
-                GUILayout.Label($"Speed: {(this.SceneRender.IterationCount / this.SceneRender.RenderingTime.TotalSeconds):#0.00}");
-            }
-
-            GUILayout.FlexibleSpace();
-
-            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-
-            GUILayout.Label($"Versión: {version}");
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private void DrawMenu_Render()
-        {
-            if (this.SceneRender.IsRendering)
-            {
-                if (GUILayout.Button("Stop"))
-                {
-                    this.SceneRender.StopRender();
-                    EditorCoroutineUtility.StopCoroutine(this.updateCoroutine);
-                }
-            }
-            else
-            {
-                if (GUILayout.Button("Render"))
-                {
-                    this.InitializeScene();
-                    this.SceneRender.StartRender();
-                    this.updateCoroutine = EditorCoroutineUtility.StartCoroutine(this.UpdateTexture(), this);
-                }
-            }
-        }
-
-        private void DrawMenu_Save()
+        private void DrawMenu_File()
         {
             if (EditorGUILayout.DropdownButton(new GUIContent("File"), FocusType.Passive))
             {
-                // create the menu and add items to it
                 var menu = new GenericMenu();
 
                 if (this.SceneRender.IsRendering)
@@ -216,76 +170,79 @@ namespace RPR4U.RPRUnityEditor
 
                 menu.AddItem(new GUIContent("About..."), false, () =>
                 {
-                    AboutWindow.Open();
                 });
 
                 menu.ShowAsContext();
             }
         }
 
-        private void DrawMenu_Upper()
+        private void DrawMenu_Lower()
         {
-            var unityCameras = (from t in Camera.allCameras select t).ToArray();
-
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            EditorGUIUtility.labelWidth = 40;
-            EditorGUIUtility.fieldWidth = 120;
-            this.sceneSettings.Render.Mode = (RadeonProRender.RenderMode)EditorGUILayout.EnumPopup("Mode:", this.sceneSettings.Render.Mode);
-
-            EditorGUIUtility.labelWidth = 50;
-            EditorGUIUtility.fieldWidth = 150;
-            this.sceneSettings.Camera.Mode = (RadeonProRender.CameraMode)EditorGUILayout.EnumPopup("Camera:", this.sceneSettings.Camera.Mode);
-
-            if (this.sceneSettings.Camera.Mode == RadeonProRender.CameraMode.LatitudLongitudeStereo ||
-                this.sceneSettings.Camera.Mode == RadeonProRender.CameraMode.CubemapStereo)
-            {
-                EditorGUIUtility.labelWidth = 25;
-                EditorGUIUtility.fieldWidth = 40;
-
-                this.sceneSettings.Camera.IPD = Mathf.Clamp(EditorGUILayout.FloatField("Ipd:", this.sceneSettings.Camera.IPD), 0, 100);
-            }
-
-            EditorGUIUtility.labelWidth = 95;
-            EditorGUIUtility.fieldWidth = 120;
-
-            this.sceneSettings.Camera.SelectedCamera = EditorGUILayout.Popup("Render Camera:", this.sceneSettings.Camera.SelectedCamera, (from t in unityCameras select t.name).ToArray());
-
-            EditorGUIUtility.labelWidth = 15;
-            EditorGUIUtility.fieldWidth = 45;
-            this.sceneSettings.Render.ImageWidth = Mathf.Clamp(EditorGUILayout.IntField("W:", this.sceneSettings.Render.ImageWidth), 0, 8192);
-
-            switch (this.sceneSettings.Camera.Mode)
-            {
-                case RadeonProRender.CameraMode.CubeMap:
-                case RadeonProRender.CameraMode.LatitudLongitude360:
-                    this.sceneSettings.Render.ImageHeight = this.sceneSettings.Render.ImageWidth / 2;
-                    break;
-
-                case RadeonProRender.CameraMode.CubemapStereo:
-                case RadeonProRender.CameraMode.FishEye:
-                case RadeonProRender.CameraMode.LatitudLongitudeStereo:
-                    this.sceneSettings.Render.ImageHeight = this.sceneSettings.Render.ImageWidth;
-                    break;
-
-                default:
-                    EditorGUIUtility.labelWidth = 15;
-                    EditorGUIUtility.fieldWidth = 45;
-                    this.sceneSettings.Render.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("H:", this.sceneSettings.Render.ImageHeight), 0, 8192);
-                    break;
-            }
-
             EditorGUIUtility.labelWidth = 75;
-            EditorGUIUtility.fieldWidth = 45;
-            this.sceneSettings.Render.NumIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.sceneSettings.Render.NumIterations), 0, 99999);
+            EditorGUIUtility.fieldWidth = 30;
 
-            this.DrawMenu_AdaptativeSampling();
-            this.DrawMenu_LightMultiplier();
+            this.zoomLevel = EditorGUILayout.IntSlider("Zoom level: ", this.zoomLevel, 0, 100);
 
             GUILayout.FlexibleSpace();
 
+            if (this.SceneRender.IsRendering)
+            {
+                GUILayout.Label($"Rendering ");
+            }
+
+            if (this.SceneRender.IterationCount > 0)
+            {
+                GUILayout.Label($"Iterations: {this.SceneRender.IterationCount}");
+                GUILayout.Label($"Time: {this.SceneRender.RenderingTime:hh\\:mm\\.ss}");
+                GUILayout.Label($"Speed: {(this.SceneRender.IterationCount / this.SceneRender.RenderingTime.TotalSeconds):#0.00}");
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawMenu_Render()
+        {
+            if (this.SceneRender.IsRendering)
+            {
+                if (GUILayout.Button("Stop"))
+                {
+                    this.SceneRender.StopRender();
+                    EditorCoroutineUtility.StopCoroutine(this.updateCoroutine);
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Render"))
+                {
+                    this.InitializeScene();
+                    this.SceneRender.StartRender();
+                    this.updateCoroutine = EditorCoroutineUtility.StartCoroutine(this.UpdateTexture(), this);
+                }
+            }
+        }
+
+        private void DrawMenu_Upper()
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            if (EditorGUILayout.DropdownButton(new GUIContent("Settings"), FocusType.Passive))
+            {
+                PopupWindow.Show(this.lightMultipliergButtonRect, new ViewportPopUpMenu(this));
+            }
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                this.lightMultipliergButtonRect = GUILayoutUtility.GetLastRect();
+            }
+
+            this.DrawMenu_File();
             this.DrawMenu_Render();
-            this.DrawMenu_Save();
+
+            GUILayout.FlexibleSpace();
+
+            GUILayout.Label($"Versión: {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
 
             EditorGUILayout.EndHorizontal();
         }
@@ -325,9 +282,12 @@ namespace RPR4U.RPRUnityEditor
 
         private void InitializeScene()
         {
-            this.SceneRender.Initialize(
-                      RadeonProRender.CreationFlags.Gpu00 | RadeonProRender.CreationFlags.Gpu01,
-                      this.sceneSettings);
+            this.SceneRender.Initialize(RadeonProRender.CreationFlags.Gpu00 | RadeonProRender.CreationFlags.Gpu01, this.Settings);
+        }
+
+        private void SaveSettings()
+        {
+            EditorPrefs.SetString("rpr4u.viewport.settings", JsonConvert.SerializeObject(this.Settings));
         }
 
         private IEnumerator UpdateTexture()
@@ -344,69 +304,171 @@ namespace RPR4U.RPRUnityEditor
             }
         }
 
-        private class AboutWindow : EditorWindow
+        private class ViewportPopUpMenu : PopupWindowContent
         {
-            public static void Open()
+            private readonly RenderparentWindow parentWindow;
+            private Vector2 scrollPosition;
+
+            private Vector2 windowSize;
+
+            public ViewportPopUpMenu(RenderparentWindow parentWindow)
             {
-                var w = ScriptableObject.CreateInstance<AboutWindow>();
-                w.position = new Rect(Screen.width / 2, Screen.height / 2, 250, 150);
-                w.ShowPopup();
+                this.parentWindow = parentWindow;
+                this.windowSize = new Vector2(350, this.parentWindow.position.height - 30);
             }
 
-            protected void OnGUI()
+            private bool showAdaptativeSettings
             {
-                EditorGUILayout.LabelField("This is an example of EditorWindow.ShowPopup", EditorStyles.wordWrappedLabel);
-                GUILayout.Space(70);
-                if (GUILayout.Button("Agree!")) this.Close();
+                get { return EditorPrefs.GetBool("rpr4u.viewport.showAdaptativeSettings"); }
+                set { EditorPrefs.SetBool("rpr4u.viewport.showAdaptativeSettings", value); }
             }
-        }
 
-        private class AdaptativePopUpMenu : PopupWindowContent
-        {
-            private readonly SceneSettings sceneSettings;
-
-            public AdaptativePopUpMenu(SceneSettings sceneSettings)
+            private bool showCameraSettings
             {
-                this.sceneSettings = sceneSettings;
+                get { return EditorPrefs.GetBool("rpr4u.viewport.showCameraSettings"); }
+                set { EditorPrefs.SetBool("rpr4u.viewport.showCameraSettings", value); }
+            }
+
+            private bool showLightSettings
+            {
+                get { return EditorPrefs.GetBool("rpr4u.viewport.showLightSettings"); }
+                set { EditorPrefs.SetBool("rpr4u.viewport.showLightSettings", value); }
+            }
+
+            private bool showRenderSettings
+            {
+                get { return EditorPrefs.GetBool("rpr4u.viewport.showRenderSettings"); }
+                set { EditorPrefs.SetBool("rpr4u.viewport.showRenderSettings", value); }
             }
 
             public override Vector2 GetWindowSize()
             {
-                return new Vector2(200, 100);
+                return this.windowSize;
             }
 
             public override void OnGUI(Rect rect)
             {
-                this.sceneSettings.Adaptative.Enabled = EditorGUILayout.Toggle("Enabled:", this.sceneSettings.Adaptative.Enabled);
+                EditorGUI.BeginChangeCheck();
 
-                if (this.sceneSettings.Adaptative.Enabled)
+                EditorGUILayout.BeginVertical();
+
+                this.scrollPosition = EditorGUILayout.BeginScrollView(this.scrollPosition);
+
+                this.DrawRenderSettings();
+                this.DrawCameraSettings();
+                this.DrawAdaptativeSettings();
+                this.DrawLightSettings();
+
+                EditorGUILayout.EndScrollView();
+
+                EditorGUILayout.EndVertical();
+
+                if (EditorGUI.EndChangeCheck())
                 {
-                    this.sceneSettings.Adaptative.MinSamples = Mathf.Clamp(EditorGUILayout.IntField("Minimum samples:", this.sceneSettings.Adaptative.MinSamples), 10, 99999);
-                    this.sceneSettings.Adaptative.TileSize = Mathf.Clamp(EditorGUILayout.IntField("Tile Size:", this.sceneSettings.Adaptative.TileSize), 4, 32);
-                    this.sceneSettings.Adaptative.Threshold = Mathf.Clamp(EditorGUILayout.FloatField("Tolerance:", this.sceneSettings.Adaptative.Threshold), 0f, 1f);
+                    switch (this.parentWindow.Settings.Camera.Mode)
+                    {
+                        case RadeonProRender.CameraMode.CubeMap:
+                        case RadeonProRender.CameraMode.LatitudLongitude360:
+                            this.parentWindow.Settings.Render.ImageHeight = this.parentWindow.Settings.Render.ImageWidth / 2;
+                            break;
+
+                        case RadeonProRender.CameraMode.CubemapStereo:
+                        case RadeonProRender.CameraMode.FishEye:
+                        case RadeonProRender.CameraMode.LatitudLongitudeStereo:
+                            this.parentWindow.Settings.Render.ImageHeight = this.parentWindow.Settings.Render.ImageWidth;
+                            break;
+                    }
+
+                    this.parentWindow.SaveSettings();
                 }
             }
-        }
 
-        private class LightPopUpMenu : PopupWindowContent
-        {
-            private readonly SceneSettings sceneSettings;
-
-            public LightPopUpMenu(SceneSettings sceneSettings)
+            private void DrawAdaptativeSettings()
             {
-                this.sceneSettings = sceneSettings;
+                this.showAdaptativeSettings = EditorGUILayout.Foldout(this.showAdaptativeSettings, "Adaptative Settings");
+
+                if (this.showAdaptativeSettings)
+                {
+                    ++EditorGUI.indentLevel;
+
+                    this.parentWindow.Settings.Adaptative.Enabled = EditorGUILayout.Toggle("Enabled:", this.parentWindow.Settings.Adaptative.Enabled);
+
+                    if (this.parentWindow.Settings.Adaptative.Enabled)
+                    {
+                        this.parentWindow.Settings.Adaptative.MinSamples = Mathf.Clamp(EditorGUILayout.IntField("Minimum samples:", this.parentWindow.Settings.Adaptative.MinSamples), 10, 99999);
+                        this.parentWindow.Settings.Adaptative.TileSize = Mathf.Clamp(EditorGUILayout.IntField("Tile Size:", this.parentWindow.Settings.Adaptative.TileSize), 4, 32);
+                        this.parentWindow.Settings.Adaptative.Threshold = Mathf.Clamp(EditorGUILayout.FloatField("Tolerance:", this.parentWindow.Settings.Adaptative.Threshold), 0f, 1f);
+                    }
+
+                    --EditorGUI.indentLevel;
+                }
             }
 
-            public override Vector2 GetWindowSize()
+            private void DrawCameraSettings()
             {
-                return new Vector2(200, 100);
+                this.showCameraSettings = EditorGUILayout.Foldout(this.showCameraSettings, "Camera Settings");
+
+                if (this.showCameraSettings)
+                {
+                    ++EditorGUI.indentLevel;
+
+                    var unityCameras = (from t in Camera.allCameras select t).ToArray();
+                    this.parentWindow.Settings.Camera.SelectedCamera = EditorGUILayout.Popup("Camera:", this.parentWindow.Settings.Camera.SelectedCamera, (from t in unityCameras select t.name).ToArray());
+
+                    var cameraMode = (RadeonProRender.CameraMode)EditorGUILayout.EnumPopup("Mode:", this.parentWindow.Settings.Camera.Mode);
+
+                    if (cameraMode != this.parentWindow.Settings.Camera.Mode)
+                    {
+                        this.parentWindow.Settings.Camera.Mode = cameraMode;
+                    }
+
+                    if (this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.LatitudLongitudeStereo ||
+                        this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.CubemapStereo)
+                    {
+                        this.parentWindow.Settings.Camera.IPD = Mathf.Clamp(EditorGUILayout.FloatField("Ipd:", this.parentWindow.Settings.Camera.IPD), 0, 100);
+                    }
+
+                    --EditorGUI.indentLevel;
+                }
             }
 
-            public override void OnGUI(Rect rect)
+            private void DrawLightSettings()
             {
-                this.sceneSettings.Light.DirectionalLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.sceneSettings.Light.DirectionalLightMultiplier), 0, 10);
-                this.sceneSettings.Light.PointLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Point Light:", this.sceneSettings.Light.PointLightMultiplier), 0, 10);
-                this.sceneSettings.Light.SpotLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Spot Light:", this.sceneSettings.Light.SpotLightMultiplier), 0, 10);
+                this.showLightSettings = EditorGUILayout.Foldout(this.showLightSettings, "Light Settings");
+
+                if (this.showLightSettings)
+                {
+                    ++EditorGUI.indentLevel;
+
+                    this.parentWindow.Settings.Light.DirectionalLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.parentWindow.Settings.Light.DirectionalLightMultiplier), 0, 10);
+                    this.parentWindow.Settings.Light.PointLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Point Light:", this.parentWindow.Settings.Light.PointLightMultiplier), 0, 10);
+                    this.parentWindow.Settings.Light.SpotLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Spot Light:", this.parentWindow.Settings.Light.SpotLightMultiplier), 0, 10);
+
+                    --EditorGUI.indentLevel;
+                }
+            }
+
+            private void DrawRenderSettings()
+            {
+                this.showRenderSettings = EditorGUILayout.Foldout(this.showRenderSettings, "Render Settings");
+
+                if (this.showRenderSettings)
+                {
+                    ++EditorGUI.indentLevel;
+
+                    this.parentWindow.Settings.Render.Mode = (RadeonProRender.RenderMode)EditorGUILayout.EnumPopup("Mode:", this.parentWindow.Settings.Render.Mode);
+
+                    this.parentWindow.Settings.Render.NumIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.parentWindow.Settings.Render.NumIterations), 0, 8192);
+
+                    this.parentWindow.Settings.Render.ImageWidth = Mathf.Clamp(EditorGUILayout.IntField("Image Width:", this.parentWindow.Settings.Render.ImageWidth), 0, 8192);
+
+                    if (this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.Perspective || this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.Orthographic)
+                    {
+                        this.parentWindow.Settings.Render.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("Image Height:", this.parentWindow.Settings.Render.ImageHeight), 0, 8192);
+                    }
+
+                    --EditorGUI.indentLevel;
+                }
             }
         }
     }

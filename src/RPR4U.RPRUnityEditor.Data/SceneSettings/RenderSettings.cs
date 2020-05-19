@@ -30,6 +30,7 @@ namespace RPR4U.RPRUnityEditor.Data
             public int ImageHeight { get; set; }
             public int NumIterations { get; set; }
             public float? RadianceClamp { get; set; }
+            public int? Recursion { get; set; }
             public RayDepthSettings RayDepth { get; set; }
         }
     }

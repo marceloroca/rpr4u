@@ -323,7 +323,7 @@ namespace RPR4U.RPRUnityEditor
         {
             this.scene?.Export(path);
 
-            var json = JsonConvert.SerializeObject(this.sceneSettings, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            var json = JsonConvert.SerializeObject((ProjectSceneSettings)this.sceneSettings, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             var settingsPath = path + ".jscene";
 

@@ -183,8 +183,7 @@ namespace RPR4U.RPRUnityEditor
                                             break;
 
                                         default:
-                                            UnityEngine.Debug.LogError("Shader Not implemented");
-                                            UnityEngine.Debug.Log($"material.name={material.name} material.shader.name={material.shader.name} renderType = {material.GetTag("RenderType", false)}");
+                                            UnityEngine.Debug.LogError($"Shader Not implemented -> material.name={material.name} material.shader.name={material.shader.name} renderType = {material.GetTag("RenderType", false)}", meshRenderer.gameObject);
                                             break;
                                     }
                                 }
