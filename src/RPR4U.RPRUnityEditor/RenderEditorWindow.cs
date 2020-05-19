@@ -37,27 +37,27 @@ namespace RPR4U.RPRUnityEditor
 
             w.sceneSettings = new SceneSettings
             {
-                RenderSettings = new Data.RenderSettings
+                Render = new SceneSettings.RenderSettings
                 {
                     Mode = RadeonProRender.RenderMode.GlobalIllumination,
                     ImageWidth = 1024,
                     ImageHeight = 512,
                     NumIterations = 100,
                 },
-                CameraSettings = new CameraSettings
+                Camera = new SceneSettings.CameraSettings
                 {
                     Mode = RadeonProRender.CameraMode.Perspective,
                     IPD = .65f,
                     SelectedCamera = 0,
                 },
-                AdaptativeSettings = new AdaptativeSettings
+                Adaptative = new SceneSettings.AdaptativeSettings
                 {
                     Enabled = false,
                     MinSamples = 100,
                     Threshold = .05f,
                     TileSize = 16,
                 },
-                LightSettings = new LightSettings
+                Light = new SceneSettings.LightSettings
                 {
                     DirectionalLightMultiplier = 6,
                     PointLightMultiplier = 2,
@@ -231,53 +231,53 @@ namespace RPR4U.RPRUnityEditor
 
             EditorGUIUtility.labelWidth = 40;
             EditorGUIUtility.fieldWidth = 120;
-            this.sceneSettings.RenderSettings.Mode = (RadeonProRender.RenderMode)EditorGUILayout.EnumPopup("Mode:", this.sceneSettings.RenderSettings.Mode);
+            this.sceneSettings.Render.Mode = (RadeonProRender.RenderMode)EditorGUILayout.EnumPopup("Mode:", this.sceneSettings.Render.Mode);
 
             EditorGUIUtility.labelWidth = 50;
             EditorGUIUtility.fieldWidth = 150;
-            this.sceneSettings.CameraSettings.Mode = (RadeonProRender.CameraMode)EditorGUILayout.EnumPopup("Camera:", this.sceneSettings.CameraSettings.Mode);
+            this.sceneSettings.Camera.Mode = (RadeonProRender.CameraMode)EditorGUILayout.EnumPopup("Camera:", this.sceneSettings.Camera.Mode);
 
-            if (this.sceneSettings.CameraSettings.Mode == RadeonProRender.CameraMode.LatitudLongitudeStereo ||
-                this.sceneSettings.CameraSettings.Mode == RadeonProRender.CameraMode.CubemapStereo)
+            if (this.sceneSettings.Camera.Mode == RadeonProRender.CameraMode.LatitudLongitudeStereo ||
+                this.sceneSettings.Camera.Mode == RadeonProRender.CameraMode.CubemapStereo)
             {
                 EditorGUIUtility.labelWidth = 25;
                 EditorGUIUtility.fieldWidth = 40;
 
-                this.sceneSettings.CameraSettings.IPD = Mathf.Clamp(EditorGUILayout.FloatField("Ipd:", this.sceneSettings.CameraSettings.IPD), 0, 100);
+                this.sceneSettings.Camera.IPD = Mathf.Clamp(EditorGUILayout.FloatField("Ipd:", this.sceneSettings.Camera.IPD), 0, 100);
             }
 
             EditorGUIUtility.labelWidth = 95;
             EditorGUIUtility.fieldWidth = 120;
 
-            this.sceneSettings.CameraSettings.SelectedCamera = EditorGUILayout.Popup("Render Camera:", this.sceneSettings.CameraSettings.SelectedCamera, (from t in unityCameras select t.name).ToArray());
+            this.sceneSettings.Camera.SelectedCamera = EditorGUILayout.Popup("Render Camera:", this.sceneSettings.Camera.SelectedCamera, (from t in unityCameras select t.name).ToArray());
 
             EditorGUIUtility.labelWidth = 15;
             EditorGUIUtility.fieldWidth = 45;
-            this.sceneSettings.RenderSettings.ImageWidth = Mathf.Clamp(EditorGUILayout.IntField("W:", this.sceneSettings.RenderSettings.ImageWidth), 0, 8192);
+            this.sceneSettings.Render.ImageWidth = Mathf.Clamp(EditorGUILayout.IntField("W:", this.sceneSettings.Render.ImageWidth), 0, 8192);
 
-            switch (this.sceneSettings.CameraSettings.Mode)
+            switch (this.sceneSettings.Camera.Mode)
             {
                 case RadeonProRender.CameraMode.CubeMap:
                 case RadeonProRender.CameraMode.LatitudLongitude360:
-                    this.sceneSettings.RenderSettings.ImageHeight = this.sceneSettings.RenderSettings.ImageWidth / 2;
+                    this.sceneSettings.Render.ImageHeight = this.sceneSettings.Render.ImageWidth / 2;
                     break;
 
                 case RadeonProRender.CameraMode.CubemapStereo:
                 case RadeonProRender.CameraMode.FishEye:
                 case RadeonProRender.CameraMode.LatitudLongitudeStereo:
-                    this.sceneSettings.RenderSettings.ImageHeight = this.sceneSettings.RenderSettings.ImageWidth;
+                    this.sceneSettings.Render.ImageHeight = this.sceneSettings.Render.ImageWidth;
                     break;
 
                 default:
                     EditorGUIUtility.labelWidth = 15;
                     EditorGUIUtility.fieldWidth = 45;
-                    this.sceneSettings.RenderSettings.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("H:", this.sceneSettings.RenderSettings.ImageHeight), 0, 8192);
+                    this.sceneSettings.Render.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("H:", this.sceneSettings.Render.ImageHeight), 0, 8192);
                     break;
             }
 
             EditorGUIUtility.labelWidth = 75;
             EditorGUIUtility.fieldWidth = 45;
-            this.sceneSettings.RenderSettings.NumIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.sceneSettings.RenderSettings.NumIterations), 0, 99999);
+            this.sceneSettings.Render.NumIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.sceneSettings.Render.NumIterations), 0, 99999);
 
             this.DrawMenu_AdaptativeSampling();
             this.DrawMenu_LightMultiplier();
@@ -377,13 +377,13 @@ namespace RPR4U.RPRUnityEditor
 
             public override void OnGUI(Rect rect)
             {
-                this.sceneSettings.AdaptativeSettings.Enabled = EditorGUILayout.Toggle("Enabled:", this.sceneSettings.AdaptativeSettings.Enabled);
+                this.sceneSettings.Adaptative.Enabled = EditorGUILayout.Toggle("Enabled:", this.sceneSettings.Adaptative.Enabled);
 
-                if (this.sceneSettings.AdaptativeSettings.Enabled)
+                if (this.sceneSettings.Adaptative.Enabled)
                 {
-                    this.sceneSettings.AdaptativeSettings.MinSamples = Mathf.Clamp(EditorGUILayout.IntField("Minimum samples:", this.sceneSettings.AdaptativeSettings.MinSamples), 10, 99999);
-                    this.sceneSettings.AdaptativeSettings.TileSize = Mathf.Clamp(EditorGUILayout.IntField("Tile Size:", this.sceneSettings.AdaptativeSettings.TileSize), 4, 32);
-                    this.sceneSettings.AdaptativeSettings.Threshold = Mathf.Clamp(EditorGUILayout.FloatField("Tolerance:", this.sceneSettings.AdaptativeSettings.Threshold), 0f, 1f);
+                    this.sceneSettings.Adaptative.MinSamples = Mathf.Clamp(EditorGUILayout.IntField("Minimum samples:", this.sceneSettings.Adaptative.MinSamples), 10, 99999);
+                    this.sceneSettings.Adaptative.TileSize = Mathf.Clamp(EditorGUILayout.IntField("Tile Size:", this.sceneSettings.Adaptative.TileSize), 4, 32);
+                    this.sceneSettings.Adaptative.Threshold = Mathf.Clamp(EditorGUILayout.FloatField("Tolerance:", this.sceneSettings.Adaptative.Threshold), 0f, 1f);
                 }
             }
         }
@@ -404,9 +404,9 @@ namespace RPR4U.RPRUnityEditor
 
             public override void OnGUI(Rect rect)
             {
-                this.sceneSettings.LightSettings.DirectionalLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.sceneSettings.LightSettings.DirectionalLightMultiplier), 0, 10);
-                this.sceneSettings.LightSettings.PointLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Point Light:", this.sceneSettings.LightSettings.PointLightMultiplier), 0, 10);
-                this.sceneSettings.LightSettings.SpotLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Spot Light:", this.sceneSettings.LightSettings.SpotLightMultiplier), 0, 10);
+                this.sceneSettings.Light.DirectionalLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Directional Light:", this.sceneSettings.Light.DirectionalLightMultiplier), 0, 10);
+                this.sceneSettings.Light.PointLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Point Light:", this.sceneSettings.Light.PointLightMultiplier), 0, 10);
+                this.sceneSettings.Light.SpotLightMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Spot Light:", this.sceneSettings.Light.SpotLightMultiplier), 0, 10);
             }
         }
     }

@@ -25,6 +25,7 @@ using System.Threading;
 using System.IO.Compression;
 using System.IO;
 using RPR4U.RPRUnityEditor.Data;
+using Newtonsoft.Json;
 
 namespace RPR4U.RPRUnityEditor
 {
@@ -77,7 +78,7 @@ namespace RPR4U.RPRUnityEditor
 
             this.context.ResolveFrameBuffer(this.frameBufferRender, this.frameBufferTexture, false);
 
-            var tex = new UnityEngine.Texture2D(this.sceneSettings.RenderSettings.ImageWidth, this.sceneSettings.RenderSettings.ImageHeight, UnityEngine.TextureFormat.RGBAFloat, false, true);
+            var tex = new UnityEngine.Texture2D(this.sceneSettings.Render.ImageWidth, this.sceneSettings.Render.ImageHeight, UnityEngine.TextureFormat.RGBAFloat, false, true);
 
             this.isAccesingBuffer = false;
 
@@ -103,23 +104,23 @@ namespace RPR4U.RPRUnityEditor
             var in_props = new IntPtr[16];
             in_props[0] = (IntPtr)0;
 
-            if (sceneSettings.AdaptativeSettings.Enabled)
+            if (sceneSettings.Adaptative.Enabled)
             {
                 in_props[0] = (IntPtr)ContextInfo.SamplerType;
                 in_props[1] = (IntPtr)ContextSamplerType.Cmj;
                 in_props[2] = (IntPtr)0;
             }
 
-            this.context = new RPRContext(creationFlags, this.pluginFolder, in_props);
+            this.context = new RPRContext(creationFlags, this.pluginFolder/*, in_props*/);
 
-            this.context.SetRenderMode(sceneSettings.RenderSettings.Mode);
+            this.context.SetRenderMode(sceneSettings.Render.Mode);
             this.context.SetParameter("preview", 1u);
 
-            if (sceneSettings.AdaptativeSettings.Enabled)
+            if (sceneSettings.Adaptative.Enabled)
             {
-                this.context.SetParameter("as.tilesize", sceneSettings.AdaptativeSettings.TileSize);
-                this.context.SetParameter("as.minspp", sceneSettings.AdaptativeSettings.MinSamples);
-                this.context.SetParameter("as.threshold", sceneSettings.AdaptativeSettings.Threshold);
+                this.context.SetParameter("as.tilesize", sceneSettings.Adaptative.TileSize);
+                this.context.SetParameter("as.minspp", sceneSettings.Adaptative.MinSamples);
+                this.context.SetParameter("as.threshold", sceneSettings.Adaptative.Threshold);
             }
 
             this.scene = new RPRScene(this.context);
@@ -127,14 +128,6 @@ namespace RPR4U.RPRUnityEditor
 
             var sceneData = SceneData.GenerateSceneData();
             sceneData.Update();
-
-            this.frameBufferRender = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.RenderSettings.ImageWidth, sceneSettings.RenderSettings.ImageHeight));
-            context.SetAOV(this.frameBufferRender, AOV.Color);
-
-            this.frameBufferTexture = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.RenderSettings.ImageWidth, sceneSettings.RenderSettings.ImageHeight));
-
-            var postEffect = new RPRPostEffect(context, PostEffectType.Normalization);
-            context.Attach(postEffect);
 
             var materialTable = new Dictionary<int, RPRMaterial>();
 
@@ -181,6 +174,17 @@ namespace RPR4U.RPRUnityEditor
                     }
 
                     var rprMaterial = new RPRUberMaterial(this.context, uberMaterial);
+
+                    //RPRDiffuseMaterial rprMaterial;
+
+                    //if (string.IsNullOrEmpty(itemMaterial.Value.MainTexture))
+                    //{
+                    //    rprMaterial = new RPRDiffuseMaterial(this.context, itemMaterial.Value.MainColor);
+                    //}
+                    //else
+                    //{
+                    //    rprMaterial = new RPRDiffuseMaterial(this.context, itemMaterial.Value.MainTexture);
+                    //}
 
                     materialTable.Add(itemMaterial.Key, rprMaterial);
                 }
@@ -231,7 +235,7 @@ namespace RPR4U.RPRUnityEditor
                 {
                     case LightType.Spot:
                         var rprSpotLight = new RPRSpotLight(this.context);
-                        rprSpotLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * sceneSettings.LightSettings.SpotLightMultiplier);
+                        rprSpotLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * sceneSettings.Light.SpotLightMultiplier);
                         rprSpotLight.SetConeShape(itemLigh.InnerSpotAngle, itemLigh.OuterSpotAngle);
 
                         rprLight = rprSpotLight;
@@ -239,14 +243,14 @@ namespace RPR4U.RPRUnityEditor
 
                     case LightType.Point:
                         var rprPointLight = new RPRPointLight(this.context);
-                        rprPointLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * sceneSettings.LightSettings.PointLightMultiplier);
+                        rprPointLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * sceneSettings.Light.PointLightMultiplier);
 
                         rprLight = rprPointLight;
                         break;
 
                     case LightType.Directional:
                         var rprDirectionalLight = new RPRDirectionalLight(this.context);
-                        rprDirectionalLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * sceneSettings.LightSettings.DirectionalLightMultiplier);
+                        rprDirectionalLight.SetRadiantPower(itemLigh.Color * itemLigh.Intensity * sceneSettings.Light.DirectionalLightMultiplier);
                         rprDirectionalLight.SetShadowSoftness(itemLigh.ShadowStrenght);
 
                         rprLight = rprDirectionalLight;
@@ -279,7 +283,7 @@ namespace RPR4U.RPRUnityEditor
 
                 var sensorSize = itemCamera.Value.SensorSize;
 
-                var aspectRatio = this.sceneSettings.RenderSettings.ImageHeight / (float)this.sceneSettings.RenderSettings.ImageWidth;
+                var aspectRatio = this.sceneSettings.Render.ImageHeight / (float)this.sceneSettings.Render.ImageWidth;
 
                 camera.SetSensorSize(new SizeFloat(sensorSize.Width, sensorSize.Width * aspectRatio));
 
@@ -288,7 +292,7 @@ namespace RPR4U.RPRUnityEditor
 
                 cameras.Add(itemCamera.Key, camera);
 
-                if (i == 0 || i == sceneSettings.CameraSettings.SelectedCamera)
+                if (i == 0 || i == sceneSettings.Camera.SelectedCamera)
                 {
                     selectedCamera = camera;
                 }
@@ -299,11 +303,11 @@ namespace RPR4U.RPRUnityEditor
             if (selectedCamera != null)
             {
                 this.scene.SetCurrentCamera(selectedCamera);
-                selectedCamera.SetMode(sceneSettings.CameraSettings.Mode);
+                selectedCamera.SetMode(sceneSettings.Camera.Mode);
 
-                if (sceneSettings.CameraSettings.Mode == CameraMode.LatitudLongitudeStereo || sceneSettings.CameraSettings.Mode == CameraMode.CubemapStereo)
+                if (sceneSettings.Camera.Mode == CameraMode.LatitudLongitudeStereo || sceneSettings.Camera.Mode == CameraMode.CubemapStereo)
                 {
-                    selectedCamera.SetIPD(sceneSettings.CameraSettings.IPD);
+                    selectedCamera.SetIPD(sceneSettings.Camera.IPD);
                 }
 
                 this.IsInitialized = true;
@@ -319,7 +323,7 @@ namespace RPR4U.RPRUnityEditor
         {
             this.scene?.Export(path);
 
-            var json = UnityEngine.JsonUtility.ToJson(this.sceneSettings, true);
+            var json = JsonConvert.SerializeObject(this.sceneSettings, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             var settingsPath = path + ".jscene";
 
@@ -343,6 +347,14 @@ namespace RPR4U.RPRUnityEditor
         {
             this.IsRendering = true;
 
+            this.frameBufferRender = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.Render.ImageWidth, sceneSettings.Render.ImageHeight));
+            context.SetAOV(this.frameBufferRender, AOV.Color);
+
+            this.frameBufferTexture = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.Render.ImageWidth, sceneSettings.Render.ImageHeight));
+
+            var postEffect = new RPRPostEffect(context, PostEffectType.Normalization);
+            context.Attach(postEffect);
+
             this.stopRender = false;
             this.IterationCount = 0;
             var startTime = DateTime.Now;
@@ -358,7 +370,7 @@ namespace RPR4U.RPRUnityEditor
 
                     this.isRenderingFrame = true;
 
-                    if (this.sceneSettings.AdaptativeSettings.Enabled)
+                    if (this.sceneSettings.Adaptative.Enabled)
                     {
                         this.context.SetParameter("framecount", this.IterationCount);
                     }
@@ -369,7 +381,7 @@ namespace RPR4U.RPRUnityEditor
 
                     this.RenderingTime = DateTime.Now - startTime;
 
-                    if (this.IterationCount > this.sceneSettings.RenderSettings.NumIterations)
+                    if (this.IterationCount > this.sceneSettings.Render.NumIterations)
                     {
                         this.stopRender = true;
                     }

@@ -154,7 +154,7 @@ namespace RPR4U.RPRUnityEditor
 
                                             if (mainTex != null)
                                             {
-                                                textureFileName = Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID()));
+                                                textureFileName = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID())));
                                             }
 
                                             if (transparent)

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <FileVersion>1.0.1.2</FileVersion>
-    <AssemblyVersion>2020.5.1.6</AssemblyVersion>
+    <AssemblyVersion>2020.5.1.21</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -23,6 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\RPR4U.UnityTest\Library\PackageCache\jillejr.newtonsoft.json-for-unity@12.0.301\Plugins\Newtonsoft.Json Editor\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.EditorCoroutines.Editor">
       <HintPath>..\libs\Unity\Unity.EditorCoroutines.Editor.dll</HintPath>
       <Private>false</Private>
