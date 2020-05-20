@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RPR4U.RPRUnityEditor.Data;
+using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
@@ -46,6 +47,12 @@ namespace RPR4U.RPRUnityEditor
                             Render = new SceneSettings.RenderSettings
                             {
                                 Mode = RadeonProRender.RenderMode.GlobalIllumination,
+                                ImageWidth = 1024,
+                                ImageHeight = 512,
+                                NumIterations = 100,
+                            },
+                            Viewport = new SceneSettings.ViewportSettings
+                            {
                                 ImageWidth = 1024,
                                 ImageHeight = 512,
                                 NumIterations = 100,
@@ -187,16 +194,34 @@ namespace RPR4U.RPRUnityEditor
 
             GUILayout.FlexibleSpace();
 
-            if (this.SceneRender.IsRendering)
-            {
-                GUILayout.Label($"Rendering ");
-            }
-
             if (this.SceneRender.IterationCount > 0)
             {
-                GUILayout.Label($"Iterations: {this.SceneRender.IterationCount}");
-                GUILayout.Label($"Time: {this.SceneRender.RenderingTime:hh\\:mm\\.ss}");
-                GUILayout.Label($"Speed: {(this.SceneRender.IterationCount / this.SceneRender.RenderingTime.TotalSeconds):#0.00}");
+                if (this.SceneRender.IsRendering)
+                {
+                    var completion = this.SceneRender.IterationCompletion * 100;
+                    var iterationsPerSecond = this.SceneRender.IterationCount / this.SceneRender.RenderingTime.TotalSeconds;
+                    var timeLeft = TimeSpan.FromSeconds((this.SceneRender.IterationLenght - this.SceneRender.IterationCount) / iterationsPerSecond);
+
+                    EditorGUIUtility.labelWidth = 40;
+                    EditorGUILayout.LabelField($"Render stats:");
+                    EditorGUIUtility.labelWidth = 15;
+                    EditorGUILayout.LabelField($"{completion:#0.00}%");
+                    EditorGUIUtility.labelWidth = 65;
+                    EditorGUILayout.LabelField($"Time = {this.SceneRender.RenderingTime:hh\\:mm\\.ss}");
+                    EditorGUIUtility.labelWidth = 65;
+                    EditorGUILayout.LabelField($"Left = {timeLeft:hh\\:mm\\.ss}");
+                    EditorGUIUtility.labelWidth = 50;
+                    EditorGUILayout.LabelField($"Speed = {(this.SceneRender.IterationCount / this.SceneRender.RenderingTime.TotalSeconds):#0.00}");
+                }
+                else
+                {
+                    EditorGUIUtility.labelWidth = 65;
+                    EditorGUILayout.LabelField($"Last render stats:");
+                    EditorGUIUtility.labelWidth = 65;
+                    EditorGUILayout.LabelField($"Time = {this.SceneRender.RenderingTime:hh\\:mm\\.ss}");
+                    EditorGUIUtility.labelWidth = 50;
+                    EditorGUILayout.LabelField($"Speed = {(this.SceneRender.IterationCount / this.SceneRender.RenderingTime.TotalSeconds):#0.00}");
+                }
             }
 
             EditorGUILayout.EndHorizontal();
@@ -317,6 +342,12 @@ namespace RPR4U.RPRUnityEditor
                 this.windowSize = new Vector2(350, this.parentWindow.position.height - 30);
             }
 
+            private bool showViewportSettings
+            {
+                get { return EditorPrefs.GetBool("rpr4u.viewport.showViewportSettings"); }
+                set { EditorPrefs.SetBool("rpr4u.viewport.showViewportSettings", value); }
+            }
+
             private bool showAdaptativeSettings
             {
                 get { return EditorPrefs.GetBool("rpr4u.viewport.showAdaptativeSettings"); }
@@ -355,6 +386,7 @@ namespace RPR4U.RPRUnityEditor
                 this.scrollPosition = EditorGUILayout.BeginScrollView(this.scrollPosition);
 
                 this.DrawRenderSettings();
+                this.DrawViewportSettings();
                 this.DrawCameraSettings();
                 this.DrawAdaptativeSettings();
                 this.DrawLightSettings();
@@ -370,12 +402,14 @@ namespace RPR4U.RPRUnityEditor
                         case RadeonProRender.CameraMode.CubeMap:
                         case RadeonProRender.CameraMode.LatitudLongitude360:
                             this.parentWindow.Settings.Render.ImageHeight = this.parentWindow.Settings.Render.ImageWidth / 2;
+                            this.parentWindow.Settings.Viewport.ImageHeight = this.parentWindow.Settings.Render.ImageWidth / 2;
                             break;
 
                         case RadeonProRender.CameraMode.CubemapStereo:
                         case RadeonProRender.CameraMode.FishEye:
                         case RadeonProRender.CameraMode.LatitudLongitudeStereo:
                             this.parentWindow.Settings.Render.ImageHeight = this.parentWindow.Settings.Render.ImageWidth;
+                            this.parentWindow.Settings.Viewport.ImageHeight = this.parentWindow.Settings.Render.ImageWidth;
                             break;
                     }
 
@@ -465,6 +499,27 @@ namespace RPR4U.RPRUnityEditor
                     if (this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.Perspective || this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.Orthographic)
                     {
                         this.parentWindow.Settings.Render.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("Image Height:", this.parentWindow.Settings.Render.ImageHeight), 0, 8192);
+                    }
+
+                    --EditorGUI.indentLevel;
+                }
+            }
+
+            private void DrawViewportSettings()
+            {
+                this.showViewportSettings = EditorGUILayout.Foldout(this.showViewportSettings, "Render Settings - Viewport");
+
+                if (this.showRenderSettings)
+                {
+                    ++EditorGUI.indentLevel;
+
+                    this.parentWindow.Settings.Viewport.NumIterations = Mathf.Clamp(EditorGUILayout.IntField("Max Iterations:", this.parentWindow.Settings.Viewport.NumIterations), 0, 8192);
+
+                    this.parentWindow.Settings.Viewport.ImageWidth = Mathf.Clamp(EditorGUILayout.IntField("Image Width:", this.parentWindow.Settings.Viewport.ImageWidth), 0, 8192);
+
+                    if (this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.Perspective || this.parentWindow.Settings.Camera.Mode == RadeonProRender.CameraMode.Orthographic)
+                    {
+                        this.parentWindow.Settings.Viewport.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("Image Height:", this.parentWindow.Settings.Viewport.ImageHeight), 0, 8192);
                     }
 
                     --EditorGUI.indentLevel;

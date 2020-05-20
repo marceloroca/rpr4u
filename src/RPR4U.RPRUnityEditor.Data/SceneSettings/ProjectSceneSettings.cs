@@ -17,8 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
-using Newtonsoft.Json;
-
 namespace RPR4U.RPRUnityEditor.Data
 {
     public partial class ProjectSceneSettings

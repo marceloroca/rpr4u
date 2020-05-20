@@ -19,7 +19,9 @@
 
 using RadeonProRender;
 using RadeonProRender.OORPR;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEngine.SceneManagement;
@@ -145,45 +147,63 @@ namespace RPR4U.RPRUnityEditor
                                     switch (material.shader.name.Trim().ToLower())
                                     {
                                         case "standard":
-                                            var textureFileName = "";
-
-                                            var transparent = material.GetTag("RenderType", false).Trim().ToLower() == "transparent";
-
-                                            var mainTex = material.GetTexture("_MainTex");
-                                            var mainColor = material.color.Convert();
-
-                                            if (mainTex != null)
                                             {
-                                                textureFileName = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID())));
-                                            }
+                                                var textureFileName = "";
 
-                                            if (transparent)
-                                            {
+                                                var transparent = material.GetTag("RenderType", false).Trim().ToLower() == "transparent";
+
+                                                var mainTex = material.GetTexture("_MainTex");
+                                                var mainColor = material.color.Convert();
+
                                                 if (mainTex != null)
                                                 {
-                                                    this.Materials.Add(id, new MaterialData { MainTexture = textureFileName, MainColor = mainColor, Transparent = true }); ;
+                                                    textureFileName = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID())));
+                                                }
+
+                                                if (mainTex != null)
+                                                {
+                                                    this.Materials.Add(id, new MaterialData { MainTexture = textureFileName, MainColor = mainColor, Transparent = transparent }); ;
                                                 }
                                                 else
                                                 {
-                                                    this.Materials.Add(id, new MaterialData { MainColor = mainColor, Transparent = true });
+                                                    this.Materials.Add(id, new MaterialData { MainColor = mainColor, Transparent = transparent });
                                                 }
                                             }
-                                            else
+                                            break;
+
+                                        default:
                                             {
+                                                UnityEngine.Debug.Log($"Shader Not implemented -> material.name={material.name} material.shader.name={material.shader.name} renderType = {material.GetTag("RenderType", false)}", meshRenderer.gameObject);
+
+                                                var textureFileName = "";
+
+                                                UnityEngine.Texture mainTex = null;
+                                                Color mainColor = new Color(1, 1, 1, 1);
+
+                                                try
+                                                {
+                                                    mainTex = material.GetTexture("_MainTex");
+                                                    // mainColor = material.color.Convert();
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    UnityEngine.Debug.Log(ex.Message, meshRenderer.gameObject);
+                                                }
+
                                                 if (mainTex != null)
                                                 {
-                                                    this.Materials.Add(id, new MaterialData { MainTexture = textureFileName });
+                                                    textureFileName = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath.Replace("/Assets", ""), UnityEditor.AssetDatabase.GetAssetPath(mainTex.GetInstanceID())));
+                                                }
+
+                                                if (mainTex != null)
+                                                {
+                                                    this.Materials.Add(id, new MaterialData { MainTexture = textureFileName, MainColor = mainColor }); ;
                                                 }
                                                 else
                                                 {
                                                     this.Materials.Add(id, new MaterialData { MainColor = mainColor });
                                                 }
                                             }
-
-                                            break;
-
-                                        default:
-                                            UnityEngine.Debug.LogError($"Shader Not implemented -> material.name={material.name} material.shader.name={material.shader.name} renderType = {material.GetTag("RenderType", false)}", meshRenderer.gameObject);
                                             break;
                                     }
                                 }

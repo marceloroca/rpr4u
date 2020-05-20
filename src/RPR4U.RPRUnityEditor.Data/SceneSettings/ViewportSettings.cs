@@ -17,12 +17,17 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
+using RadeonProRender;
+
 namespace RPR4U.RPRUnityEditor.Data
 {
-    public partial class SceneSettings : ProjectSceneSettings
+    public partial class SceneSettings
     {
-        public ViewportSettings Viewport { get; set; }
-        public CameraSettings Camera { get; set; }
-        public LightSettings Light { get; set; }
+        public class ViewportSettings
+        {
+            public int ImageWidth { get; set; }
+            public int ImageHeight { get; set; }
+            public int NumIterations { get; set; }
+        }
     }
 }

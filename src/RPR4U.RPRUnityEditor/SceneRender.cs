@@ -53,6 +53,8 @@ namespace RPR4U.RPRUnityEditor
 
         public bool IsRendering { get; private set; }
         public int IterationCount { get; private set; }
+        public int IterationLenght { get; private set; }
+        public float IterationCompletion { get { return this.IterationCount / (float)this.IterationLenght; } }
         public bool IsInitialized { get; private set; }
 
         public TimeSpan RenderingTime { get; private set; }
@@ -78,7 +80,7 @@ namespace RPR4U.RPRUnityEditor
 
             this.context.ResolveFrameBuffer(this.frameBufferRender, this.frameBufferTexture, false);
 
-            var tex = new UnityEngine.Texture2D(this.sceneSettings.Render.ImageWidth, this.sceneSettings.Render.ImageHeight, UnityEngine.TextureFormat.RGBAFloat, false, true);
+            var tex = new UnityEngine.Texture2D(this.sceneSettings.Viewport.ImageWidth, this.sceneSettings.Viewport.ImageHeight, UnityEngine.TextureFormat.RGBAFloat, false, true);
 
             this.isAccesingBuffer = false;
 
@@ -91,6 +93,8 @@ namespace RPR4U.RPRUnityEditor
 
         public void Initialize(CreationFlags creationFlags, SceneSettings sceneSettings)
         {
+            this.IterationLenght = sceneSettings.Viewport.NumIterations;
+
             if (this.context != null)
             {
                 this.context.Dispose();
@@ -283,7 +287,7 @@ namespace RPR4U.RPRUnityEditor
 
                 var sensorSize = itemCamera.Value.SensorSize;
 
-                var aspectRatio = this.sceneSettings.Render.ImageHeight / (float)this.sceneSettings.Render.ImageWidth;
+                var aspectRatio = this.sceneSettings.Viewport.ImageHeight / (float)this.sceneSettings.Viewport.ImageWidth;
 
                 camera.SetSensorSize(new SizeFloat(sensorSize.Width, sensorSize.Width * aspectRatio));
 
@@ -347,10 +351,10 @@ namespace RPR4U.RPRUnityEditor
         {
             this.IsRendering = true;
 
-            this.frameBufferRender = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.Render.ImageWidth, sceneSettings.Render.ImageHeight));
+            this.frameBufferRender = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.Viewport.ImageWidth, sceneSettings.Viewport.ImageHeight));
             context.SetAOV(this.frameBufferRender, AOV.Color);
 
-            this.frameBufferTexture = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.Render.ImageWidth, sceneSettings.Render.ImageHeight));
+            this.frameBufferTexture = new RPRFrameBuffer(context, new FramebufferFormat(4, ComponentType.Float32), new FramebufferDesc(sceneSettings.Viewport.ImageWidth, sceneSettings.Viewport.ImageHeight));
 
             var postEffect = new RPRPostEffect(context, PostEffectType.Normalization);
             context.Attach(postEffect);
@@ -381,7 +385,7 @@ namespace RPR4U.RPRUnityEditor
 
                     this.RenderingTime = DateTime.Now - startTime;
 
-                    if (this.IterationCount > this.sceneSettings.Render.NumIterations)
+                    if (this.IterationCount > this.IterationLenght)
                     {
                         this.stopRender = true;
                     }
