@@ -17,15 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
-namespace RPR4U.RPRUnityEditor.Data
+namespace RPR4U.RPRUnityEditor.Data.SceneSettings
 {
-    public partial class SceneSettings
+    public class LightSettings
     {
-        public class LightSettings
-        {
-            public float DirectionalLightMultiplier { get; set; }
-            public float PointLightMultiplier { get; set; }
-            public float SpotLightMultiplier { get; set; }
-        }
+        public float DirectionalLightMultiplier { get; set; }
+        public float PointLightMultiplier { get; set; }
+        public float SpotLightMultiplier { get; set; }
     }
 }

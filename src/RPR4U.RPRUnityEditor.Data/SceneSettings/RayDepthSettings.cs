@@ -17,17 +17,14 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
-namespace RPR4U.RPRUnityEditor.Data
+namespace RPR4U.RPRUnityEditor.Data.SceneSettings
 {
-    public partial class SceneSettings
+    public class RayDepthSettings
     {
-        public class RayDepthSettings
-        {
-            public int? MaxDiffuse { get; set; }
-            public int? MaxGlossy { get; set; }
-            public int? MaxShadow { get; set; }
-            public int? MaxRefraction { get; set; }
-            public int? MaxGlossyRefraction { get; set; }
-        }
+        public int? MaxDiffuse { get; set; }
+        public int? MaxGlossy { get; set; }
+        public int? MaxShadow { get; set; }
+        public int? MaxRefraction { get; set; }
+        public int? MaxGlossyRefraction { get; set; }
     }
 }

@@ -18,7 +18,7 @@ namespace RPR4U.RPRUnityEditor
         private Vector2 previewZoomPosition = new Vector2(0, 0);
         private Texture2D renderTexture;
         private SceneRender sceneRender;
-        private SceneSettings settings;
+        private Data.SceneSettings.SceneSettings settings;
         private EditorCoroutine updateCoroutine;
 
         private bool previewImageFit
@@ -46,23 +46,23 @@ namespace RPR4U.RPRUnityEditor
             }
         }
 
-        private SceneSettings Settings
+        private Data.SceneSettings.SceneSettings Settings
         {
             get
             {
                 if (this.settings == null)
                 {
-                    var json = EditorPrefs.GetString("rpr4u.viewport.settings", string.Empty);
+                    var json = EditorPrefs.GetString("srpr4u.viewport.settings", string.Empty);
 
                     if (string.IsNullOrWhiteSpace(json))
                     {
-                        this.settings = SceneSettings.Default;
+                        this.settings = Data.SceneSettings.SceneSettings.Default;
 
                         this.SaveSettings();
                     }
                     else
                     {
-                        this.settings = JsonConvert.DeserializeObject<SceneSettings>(json);
+                        this.settings = JsonConvert.DeserializeObject<Data.SceneSettings.SceneSettings>(json);
                     }
                 }
 
@@ -247,22 +247,23 @@ namespace RPR4U.RPRUnityEditor
                 EditorGUIUtility.labelWidth = 70;
                 EditorGUIUtility.fieldWidth = 30;
                 this.previewZoomLevel = EditorGUILayout.IntSlider("Zoom level: ", this.previewZoomLevel, ZOOM_MIN, ZOOM_MAX);
-            }
 
-            //////
-            if (GUILayout.Button("Reset"))
-            {
-                this.previewZoomPosition = Vector2.zero;
-                this.previewZoomLevel = 100;
-            }
+                if (GUILayout.Button("R"))
+                {
+                    this.previewZoomPosition = Vector2.zero;
+                    this.previewZoomLevel = 100;
+                }
 
-            if (this.renderTexture != null)
-            {
-                EditorGUIUtility.labelWidth = 300;
-                EditorGUILayout.LabelField($"xx:{this.previewZoomPosition} size: {new Vector2(this.renderTexture.width, this.renderTexture.height) * (this.previewZoomLevel * .01f)} w: {this.position.width}, {this.position.height}");
-            }
+                //////
 
-            ///////
+                //if (this.renderTexture != null)
+                //{
+                //    EditorGUIUtility.labelWidth = 300;
+                //    EditorGUILayout.LabelField($"xx:{this.previewZoomPosition} size: {new Vector2(this.renderTexture.width, this.renderTexture.height) * (this.previewZoomLevel * .01f)} w: {this.position.width}, {this.position.height}");
+                //}
+
+                ///////
+            }
 
             GUILayout.FlexibleSpace();
 
@@ -339,7 +340,9 @@ namespace RPR4U.RPRUnityEditor
 
             GUILayout.FlexibleSpace();
 
-            GUILayout.Label($"Versión: {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+
+            GUILayout.Label($"Version: {version.Major}.{version.Minor:00}-{version.Build:00}:{version.Revision:X4}");
 
             EditorGUILayout.EndHorizontal();
         }

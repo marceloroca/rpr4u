@@ -19,9 +19,15 @@
 
 namespace RPR4U.RPRUnityEditor.Data
 {
-    public partial class ProjectSceneSettings
+    public class ProjectSettings : SceneSettings.ISceneSettings
     {
-        public SceneSettings.RenderSettings Render { get; set; }
+        public ProjectSettings(SceneSettings.SceneSettings sceneSettings)
+        {
+            this.Adaptative = sceneSettings.Adaptative;
+            this.Render = sceneSettings.Render;
+        }
+
         public SceneSettings.AdaptativeSettings Adaptative { get; set; }
+        public SceneSettings.RenderSettings Render { get; set; }
     }
 }

@@ -17,14 +17,11 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
-using RadeonProRender;
-
 namespace RPR4U.RPRUnityEditor.Data.SceneSettings
 {
-    public class CameraSettings
+    public interface ISceneSettings
     {
-        public CameraMode Mode { get; set; }
-        public float IPD { get; set; }
-        public int SelectedCamera { get; set; }
+        AdaptativeSettings Adaptative { get; set; }
+        RenderSettings Render { get; set; }
     }
 }

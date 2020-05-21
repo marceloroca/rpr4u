@@ -17,16 +17,13 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
-namespace RPR4U.RPRUnityEditor.Data
+namespace RPR4U.RPRUnityEditor.Data.SceneSettings
 {
-    public partial class SceneSettings
+    public class AdaptativeSettings
     {
-        public class AdaptativeSettings
-        {
-            public bool Enabled { get; set; }
-            public int MinSamples { get; set; }
-            public int TileSize { get; set; }
-            public float Threshold { get; set; }
-        }
+        public bool Enabled { get; set; }
+        public int MinSamples { get; set; }
+        public int TileSize { get; set; }
+        public float Threshold { get; set; }
     }
 }

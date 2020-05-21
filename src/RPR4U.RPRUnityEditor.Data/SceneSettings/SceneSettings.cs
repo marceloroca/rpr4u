@@ -17,12 +17,58 @@
 // You should have received a copy of the GNU General Public License
 // along with RPR4U. If not, see<https://www.gnu.org/licenses/>.
 
-namespace RPR4U.RPRUnityEditor.Data
+using RadeonProRender;
+
+namespace RPR4U.RPRUnityEditor.Data.SceneSettings
 {
-    public partial class SceneSettings : ProjectSceneSettings
+    public partial class SceneSettings : ISceneSettings
     {
-        public ViewportSettings Viewport { get; set; }
+        public static SceneSettings Default
+        {
+            get
+            {
+                return new SceneSettings
+                {
+                    Render = new RenderSettings
+                    {
+                        Mode = RenderMode.GlobalIllumination,
+                        ImageWidth = 2048,
+                        ImageHeight = 1024,
+                        NumIterations = 500,
+                    },
+                    Viewport = new ViewportSettings
+                    {
+                        ImageWidth = 1024,
+                        ImageHeight = 512,
+                        NumIterations = 100,
+                    },
+                    Camera = new CameraSettings
+                    {
+                        Mode = CameraMode.Perspective,
+                        IPD = .65f,
+                        SelectedCamera = 0,
+                    },
+                    Adaptative = new AdaptativeSettings
+                    {
+                        Enabled = false,
+                        MinSamples = 100,
+                        Threshold = .05f,
+                        TileSize = 16,
+                    },
+                    Light = new LightSettings
+                    {
+                        DirectionalLightMultiplier = 6,
+                        PointLightMultiplier = 2,
+                        SpotLightMultiplier = 2,
+                    },
+                };
+            }
+        }
+
         public CameraSettings Camera { get; set; }
         public LightSettings Light { get; set; }
+        public ViewportSettings Viewport { get; set; }
+        public AdaptativeSettings Adaptative { get; set; }
+        public RenderSettings Render { get; set; }
     }
 }

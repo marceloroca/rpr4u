@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.IO.Compression;
 using System.IO;
-using RPR4U.RPRUnityEditor.Data;
 using Newtonsoft.Json;
 
 namespace RPR4U.RPRUnityEditor
@@ -44,7 +43,7 @@ namespace RPR4U.RPRUnityEditor
 
         private bool stopRender;
         private bool isRenderingFrame;
-        private SceneSettings sceneSettings;
+        private Data.SceneSettings.SceneSettings sceneSettings;
 
         public SceneRender(string pluginFolder)
         {
@@ -91,7 +90,7 @@ namespace RPR4U.RPRUnityEditor
             return tex;
         }
 
-        public void Initialize(CreationFlags creationFlags, SceneSettings sceneSettings)
+        public void Initialize(CreationFlags creationFlags, Data.SceneSettings.SceneSettings sceneSettings)
         {
             this.IterationLenght = sceneSettings.Viewport.NumIterations;
 
@@ -327,7 +326,7 @@ namespace RPR4U.RPRUnityEditor
         {
             this.scene?.Export(path);
 
-            var json = JsonConvert.SerializeObject((ProjectSceneSettings)this.sceneSettings, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            var json = JsonConvert.SerializeObject(new Data.ProjectSettings(this.sceneSettings), new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             var settingsPath = path + ".jscene";
 

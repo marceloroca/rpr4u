@@ -19,19 +19,16 @@
 
 using RadeonProRender;
 
-namespace RPR4U.RPRUnityEditor.Data
+namespace RPR4U.RPRUnityEditor.Data.SceneSettings
 {
-    public partial class SceneSettings
+    public class RenderSettings
     {
-        public class RenderSettings
-        {
-            public RenderMode Mode { get; set; }
-            public int ImageWidth { get; set; }
-            public int ImageHeight { get; set; }
-            public int NumIterations { get; set; }
-            public float? RadianceClamp { get; set; }
-            public int? Recursion { get; set; }
-            public RayDepthSettings RayDepth { get; set; }
-        }
+        public RenderMode Mode { get; set; }
+        public int ImageWidth { get; set; }
+        public int ImageHeight { get; set; }
+        public int NumIterations { get; set; }
+        public float? RadianceClamp { get; set; }
+        public int? Recursion { get; set; }
+        public RayDepthSettings RayDepth { get; set; }
     }
 }
