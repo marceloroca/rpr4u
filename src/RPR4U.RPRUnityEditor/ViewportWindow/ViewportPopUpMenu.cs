@@ -37,6 +37,12 @@ namespace RPR4U.RPRUnityEditor
                 set { EditorPrefs.SetBool("rpr4u.viewport.showLightSettings", value); }
             }
 
+            private bool showRenderRayDepthSettings
+            {
+                get { return EditorPrefs.GetBool("rpr4u.viewport.showRenderrRayDepthSettings"); }
+                set { EditorPrefs.SetBool("rpr4u.viewport.showRenderrRayDepthSettings", value); }
+            }
+
             private bool showRenderSettings
             {
                 get { return EditorPrefs.GetBool("rpr4u.viewport.showRenderSettings"); }
@@ -79,14 +85,14 @@ namespace RPR4U.RPRUnityEditor
                         case RadeonProRender.CameraMode.CubeMap:
                         case RadeonProRender.CameraMode.LatitudLongitude360:
                             this.parentWindow.Settings.Render.ImageHeight = this.parentWindow.Settings.Render.ImageWidth / 2;
-                            this.parentWindow.Settings.Viewport.ImageHeight = this.parentWindow.Settings.Render.ImageWidth / 2;
+                            this.parentWindow.Settings.Viewport.ImageHeight = this.parentWindow.Settings.Viewport.ImageWidth / 2;
                             break;
 
                         case RadeonProRender.CameraMode.CubemapStereo:
                         case RadeonProRender.CameraMode.FishEye:
                         case RadeonProRender.CameraMode.LatitudLongitudeStereo:
                             this.parentWindow.Settings.Render.ImageHeight = this.parentWindow.Settings.Render.ImageWidth;
-                            this.parentWindow.Settings.Viewport.ImageHeight = this.parentWindow.Settings.Render.ImageWidth;
+                            this.parentWindow.Settings.Viewport.ImageHeight = this.parentWindow.Settings.Viewport.ImageWidth;
                             break;
                     }
 
@@ -178,6 +184,29 @@ namespace RPR4U.RPRUnityEditor
                         this.parentWindow.Settings.Render.ImageHeight = Mathf.Clamp(EditorGUILayout.IntField("Image Height:", this.parentWindow.Settings.Render.ImageHeight), 0, 8192);
                     }
 
+                    this.parentWindow.Settings.Render.RadianceClamp = this.FloatField("Radiance clamp", this.parentWindow.Settings.Render.RadianceClamp, 2, 0, 100);
+                    this.parentWindow.Settings.Render.Recursion = this.IntField("Recursion", this.parentWindow.Settings.Render.Recursion, 10, 0, 100);
+
+                    this.showRenderRayDepthSettings = EditorGUILayout.Foldout(this.showRenderRayDepthSettings, "Max Ray Depth");
+
+                    if (this.showRenderRayDepthSettings)
+                    {
+                        ++EditorGUI.indentLevel;
+
+                        if (this.parentWindow.Settings.Render.RayDepth == null)
+                        {
+                            this.parentWindow.Settings.Render.RayDepth = new Data.SceneSettings.RayDepthSettings();
+                        }
+
+                        this.parentWindow.Settings.Render.RayDepth.MaxDiffuse = this.IntField("Diffuse", this.parentWindow.Settings.Render.RayDepth.MaxDiffuse, 3, 0, 100);
+                        this.parentWindow.Settings.Render.RayDepth.MaxGlossy = this.IntField("Glossy", this.parentWindow.Settings.Render.RayDepth.MaxGlossy, 5, 0, 100);
+                        this.parentWindow.Settings.Render.RayDepth.MaxRefraction = this.IntField("Refraction", this.parentWindow.Settings.Render.RayDepth.MaxRefraction, 5, 0, 100);
+                        this.parentWindow.Settings.Render.RayDepth.MaxGlossyRefraction = this.IntField("Glossy Refraction", this.parentWindow.Settings.Render.RayDepth.MaxGlossyRefraction, 5, 0, 100);
+                        this.parentWindow.Settings.Render.RayDepth.MaxShadow = this.IntField("Shadow", this.parentWindow.Settings.Render.RayDepth.MaxShadow, 5, 0, 100);
+
+                        --EditorGUI.indentLevel;
+                    }
+
                     --EditorGUI.indentLevel;
                 }
             }
@@ -186,7 +215,7 @@ namespace RPR4U.RPRUnityEditor
             {
                 this.showViewportSettings = EditorGUILayout.Foldout(this.showViewportSettings, "Render Settings - Viewport");
 
-                if (this.showRenderSettings)
+                if (this.showViewportSettings)
                 {
                     ++EditorGUI.indentLevel;
 
@@ -201,6 +230,72 @@ namespace RPR4U.RPRUnityEditor
 
                     --EditorGUI.indentLevel;
                 }
+            }
+
+            private float? FloatField(string title, float? value, float defaultValue, float min, float max)
+            {
+                var hasValue = value.HasValue;
+
+                EditorGUILayout.BeginHorizontal();
+
+                var labelWidth = EditorGUIUtility.labelWidth;
+
+                EditorGUIUtility.labelWidth *= .5f;
+                hasValue = EditorGUILayout.ToggleLeft(title, hasValue);
+
+                if (!hasValue)
+                {
+                    value = null;
+                }
+                else if (!value.HasValue)
+                {
+                    value = defaultValue;
+                }
+
+                if (value.HasValue)
+                {
+                    EditorGUIUtility.labelWidth = 0;
+                    value = Mathf.Clamp(EditorGUILayout.FloatField("", value.Value), min, max);
+                }
+
+                EditorGUIUtility.labelWidth = labelWidth;
+
+                EditorGUILayout.EndHorizontal();
+
+                return value;
+            }
+
+            private int? IntField(string title, int? value, int defaultValue, int min, int max)
+            {
+                var hasValue = value.HasValue;
+
+                EditorGUILayout.BeginHorizontal();
+
+                var labelWidth = EditorGUIUtility.labelWidth;
+
+                EditorGUIUtility.labelWidth *= .5f;
+                hasValue = EditorGUILayout.ToggleLeft(title, hasValue);
+
+                if (!hasValue)
+                {
+                    value = null;
+                }
+                else if (!value.HasValue)
+                {
+                    value = defaultValue;
+                }
+
+                if (value.HasValue)
+                {
+                    EditorGUIUtility.labelWidth = 0;
+                    value = Mathf.Clamp(EditorGUILayout.IntField("", value.Value), min, max);
+                }
+
+                EditorGUIUtility.labelWidth = labelWidth;
+
+                EditorGUILayout.EndHorizontal();
+
+                return value;
             }
         }
     }

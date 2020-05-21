@@ -109,7 +109,7 @@ namespace RPR4U.RPRUnityEditor
                 if (mouseInRect)
                 {
                     // zoom
-                    if (Event.current.type == EventType.ScrollWheel)
+                    if (Event.current.type == EventType.ScrollWheel && !this.previewImageFit)
                     {
                         var newZoomLevel = Mathf.Clamp(this.previewZoomLevel - (int)Event.current.delta.y * 3, ZOOM_MIN, ZOOM_MAX);
 
