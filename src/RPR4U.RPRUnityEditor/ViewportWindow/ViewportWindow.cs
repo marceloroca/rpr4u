@@ -96,20 +96,45 @@ namespace RPR4U.RPRUnityEditor
 
         protected void OnGUI()
         {
-            var windowRect = new Rect(0, 21, this.position.width, this.position.height - 42);
-            var mouseInRect = windowRect.Contains(Event.current.mousePosition);
-
-            if (mouseInRect)
+            if (this.renderTexture == null)
             {
-                // zoom
-                if (Event.current.type == EventType.ScrollWheel)
-                {
-                    this.previewZoomLevel = Mathf.Clamp(this.previewZoomLevel - (int)Event.current.delta.y * 3, ZOOM_MIN, ZOOM_MAX);
-                    Event.current.Use();
-                }
+                this.previewZoomLevel = 100;
+                this.mousePosition = null;
+            }
+            else
+            {
+                var windowRect = new Rect(0, 21, this.position.width, this.position.height - 42);
+                var mouseInRect = windowRect.Contains(Event.current.mousePosition);
 
-                if (this.renderTexture != null)
+                if (mouseInRect)
                 {
+                    // zoom
+                    if (Event.current.type == EventType.ScrollWheel)
+                    {
+                        var newZoomLevel = Mathf.Clamp(this.previewZoomLevel - (int)Event.current.delta.y * 3, ZOOM_MIN, ZOOM_MAX);
+
+                        var delta = (newZoomLevel - this.previewZoomLevel) * .01f;
+
+                        var dw = this.renderTexture.width * delta;
+                        var dh = this.renderTexture.height * delta;
+
+                        var w = this.renderTexture.width * this.previewZoomLevel * .01f;
+                        var h = this.renderTexture.height * this.previewZoomLevel * .01f;
+
+                        var x = .5f;
+                        var y = .5f;
+
+                        //x = (w - this.previewZoomPosition.x) / w;
+                        //y = (h - this.previewZoomPosition.y) / h;
+
+                        this.previewZoomPosition.x -= dw * x;
+                        this.previewZoomPosition.y -= dh * y;
+
+                        this.previewZoomLevel = newZoomLevel;
+
+                        Event.current.Use();
+                    }
+
                     // pan
                     if (Event.current.button == 0)
                     {
@@ -135,19 +160,19 @@ namespace RPR4U.RPRUnityEditor
                         }
                     }
                 }
-            }
-            else
-            {
-                this.mousePosition = null;
-            }
+                else
+                {
+                    this.mousePosition = null;
+                }
 
-            if (this.previewImageFit)
-            {
-                this.DrawTexturePreviewFit();
-            }
-            else
-            {
-                this.DrawTexturePreviewZoom();
+                if (this.previewImageFit)
+                {
+                    this.DrawTexturePreviewFit();
+                }
+                else
+                {
+                    this.DrawTexturePreviewZoom();
+                }
             }
 
             EditorGUILayout.BeginVertical();
@@ -225,17 +250,17 @@ namespace RPR4U.RPRUnityEditor
             }
 
             //////
-            //if (GUILayout.Button("Reset"))
-            //{
-            //    this.previewZoomPosition = Vector2.zero;
-            //    this.previewZoomLevel = 100;
-            //}
+            if (GUILayout.Button("Reset"))
+            {
+                this.previewZoomPosition = Vector2.zero;
+                this.previewZoomLevel = 100;
+            }
 
-            //if (this.renderTexture != null)
-            //{
-            //    EditorGUIUtility.labelWidth = 300;
-            //    EditorGUILayout.LabelField($"xx:{this.previewZoomPosition} size: {new Vector2(this.renderTexture.width, this.renderTexture.height) * (this.previewZoomLevel * .01f)} w: {this.position.width}, {this.position.height}");
-            //}
+            if (this.renderTexture != null)
+            {
+                EditorGUIUtility.labelWidth = 300;
+                EditorGUILayout.LabelField($"xx:{this.previewZoomPosition} size: {new Vector2(this.renderTexture.width, this.renderTexture.height) * (this.previewZoomLevel * .01f)} w: {this.position.width}, {this.position.height}");
+            }
 
             ///////
 
@@ -356,24 +381,30 @@ namespace RPR4U.RPRUnityEditor
                 return;
             }
 
+            // zoom
             var w = this.renderTexture.width * this.previewZoomLevel * .01f;
             var h = this.renderTexture.height * this.previewZoomLevel * .01f;
 
+            // pan
             if (w <= this.position.width)
             {
+                // center the image horizontally
                 this.previewZoomPosition.x = (this.position.width - w) * .5f;
             }
             else
             {
+                // clamp the image horizontally
                 this.previewZoomPosition.x = Mathf.Clamp(this.previewZoomPosition.x, -(w - this.position.width), 0);
             }
 
             if (h <= this.position.height)
             {
+                // center de image vertically
                 this.previewZoomPosition.y = (this.position.height - h - 42) * .5f;
             }
             else
             {
+                // clamp the image vertically
                 this.previewZoomPosition.y = Mathf.Clamp(this.previewZoomPosition.y, -(h - this.position.height), 0);
             }
 
