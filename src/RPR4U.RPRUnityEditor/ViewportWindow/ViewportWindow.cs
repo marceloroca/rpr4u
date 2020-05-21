@@ -52,7 +52,7 @@ namespace RPR4U.RPRUnityEditor
             {
                 if (this.settings == null)
                 {
-                    var json = EditorPrefs.GetString("srpr4u.viewport.settings", string.Empty);
+                    var json = EditorPrefs.GetString("rpr4u.viewport.settings", string.Empty);
 
                     if (string.IsNullOrWhiteSpace(json))
                     {
